@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# SQLite lokal (terbuat otomatis saat server jalan)
+data/*.db
+data/*.db-journal
+data/*.db-wal
+
+# Node / Capacitor build output
+node_modules/
+www/
+android/
+ios/
+
+# Lingkungan & rahasia
+.env
+.env.local
+.env.*.local
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log

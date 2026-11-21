@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1D3557" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="MakaRapi" />
+  <title>MakaRapi — Studio Format &amp; Perapihan Makalah Akademik</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Google Fonts: Newsreader, IBM Plex Sans, IBM Plex Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500;1,6..72,600&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN & Konfigurasi Tema -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind-config.js"></script>
+
+  <!-- Pustaka Pembaca Dokumen: PDF.js & Mammoth.js (DOCX) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- Stylesheet Utama -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+
+<body
+  class="page-home bg-paper-bg text-ink antialiased selection:bg-ink-primary/15 selection:text-ink-primary flex flex-col min-h-screen">
+
+  <!-- HEADER EDITORIAL -->
+  <header
+    class="h-14 px-5 sm:px-8 lg:px-12 flex items-center justify-between gap-3 sticky top-0 z-30 bg-paper-bg/92 backdrop-blur-sm border-b border-paper-border/80">
+    <a href="home.html" class="inline-flex items-center gap-2.5 no-underline group">
+      <!-- Logo Monogram Khas MakaRapi (Crop Mark + Lembar Kertas) -->
+      <svg class="w-6 h-6 shrink-0" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true">
+        <rect x="4" y="3" width="20" height="22" rx="2" fill="#FFFFFF" stroke="#1D3557" stroke-width="1.5" />
+        <path d="M1 7V3.5C1 2.12 2.12 1 3.5 1H7" stroke="#1D3557" stroke-width="1.3" stroke-linecap="square" />
+        <path d="M27 21V24.5C27 25.88 25.88 27 24.5 27H21" stroke="#1D3557" stroke-width="1.3"
+          stroke-linecap="square" />
+        <path d="M8.5 19V9.5L14 15.2L19.5 9.5V19" stroke="#1D3557" stroke-width="1.75" stroke-linecap="round"
+          stroke-linejoin="round" />
+        <line x1="8.5" y1="21.8" x2="19.5" y2="21.8" stroke="#18181B" stroke-opacity="0.35" stroke-width="1.1" />
+      </svg>
+      <span class="font-serif text-[20px] font-semibold tracking-tight text-ink leading-none">MakaRapi</span>
+    </a>
+
+    <!-- Spesifikasi Tipografi Tengah (Desktop) -->
+    <div class="hidden md:flex items-center gap-2 font-mono text-[10.5px] tracking-wider text-ink-subtle select-none">
+      <span>A4 &middot; F4 &middot; B5</span>
+      <span class="text-paper-borderStrong">/</span>
+      <span>OOXML .DOCX ASLI</span>
+      <span class="text-paper-borderStrong">/</span>
+      <span>PRINT LAYOUT</span>
+    </div>
+
+    <div class="flex items-center gap-2.5 shrink-0">
+      <button id="btn-install-pwa" type="button" title="Pasang MakaRapi sebagai aplikasi di perangkat ini"
+        class="hidden items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-primary bg-white/80 hover:bg-white border border-paper-border hover:border-ink-primary/40 transition cursor-pointer">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+        </svg>
+        <span class="hidden sm:inline">Install App</span>
+      </button>
+
+      <button id="btn-header-resume" type="button"
+        class="hidden items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-desk/60 transition cursor-pointer">
+        <span>Lanjutkan Draft</span>
+      </button>
+
+      <a href="index.html"
+        class="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium rounded-[5px] text-ink-primary bg-white/80 hover:bg-white border border-paper-border hover:border-ink-primary/40 transition no-underline">
+        <span>Buka Editor</span>
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+        </svg>
+      </a>
+    </div>
+  </header>
+
+  <!-- PENGGARIS CM KHAS EDITORIAL PRINT STUDIO -->
+  <div class="print-ruler-bar select-none overflow-hidden" aria-hidden="true">
+    <div
+      class="w-full h-full px-5 sm:px-8 lg:px-12 flex items-center justify-between font-mono text-[9.5px] text-ink-subtle/90 tabular-nums">
+      <div class="flex items-center gap-6">
+        <span>0 cm</span>
+        <span class="hidden sm:inline text-ink-primary/70 font-medium">| 4 cm margin kiri</span>
+      </div>
+      <span class="hidden md:inline tracking-widest uppercase text-[9px] text-ink-subtle">Standar Lembar A4 &middot; 21,0 &times; 29,7 cm</span>
+      <div class="flex items-center gap-6">
+        <span class="hidden sm:inline text-ink-primary/70 font-medium">3 cm margin kanan |</span>
+        <span>21 cm</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- KONTEN UTAMA: EDITORIAL PRINT STUDIO FULL-WIDTH SPLIT HERO -->
+  <main class="flex-1 w-full px-5 sm:px-8 lg:px-12 py-8 sm:py-10">
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-12 items-stretch">
+
+      <!-- ================================================================= -->
+      <!-- KOLOM KIRI: HEADLINE EDITORIAL + KARTU UNGGAH .DOCX               -->
+      <!-- ================================================================= -->
+      <div class="lg:col-span-5 xl:col-span-5 flex flex-col justify-between space-y-6">
+
+        <div class="space-y-6">
+        <!-- Eyebrow & Judul Editorial -->
+        <section class="ed-reveal space-y-3">
+          <div class="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-wider uppercase text-ink-primary">
+            <span class="w-1.5 h-1.5 rounded-full bg-ink-primary"></span>
+            <span>Studio Tata Tulis Akademik Indonesia</span>
+          </div>
+          <h1 class="font-serif text-[34px] sm:text-[42px] xl:text-[46px] font-semibold tracking-tight text-ink leading-[1.06]">
+            Format makalah rapi,<br />
+            sesuai <span class="italic text-ink-primary font-medium">pedoman kampus.</span>
+          </h1>
+          <p class="text-[13.5px] sm:text-[14px] text-ink-muted leading-relaxed max-w-[540px]">
+            Unggah naskah <code class="font-mono text-[12px] text-ink bg-white/80 px-1 py-0.5 rounded-[3px] border border-paper-border">.docx</code>, atur margin dan pedoman, lalu unduh dokumen Microsoft Word siap cetak — lengkap dengan Daftar Isi, penomoran halaman, dan audit sitasi.
+          </p>
+        </section>
+
+        <!-- Banner Lanjutkan Draft (tampil hanya bila ada draft tersimpan) -->
+        <button id="btn-resume-draft" type="button"
+          class="hidden w-full px-4 py-3 text-left rounded-[6px] bg-white border border-paper-border hover:border-ink-primary/45 transition cursor-pointer">
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-ink-primary shrink-0"></span>
+                <span class="text-[12.5px] font-medium text-ink">Lanjutkan draft terakhir</span>
+                <span id="draft-meta-badge" class="font-mono text-[10.5px] text-ink-subtle tabular-nums"></span>
+              </div>
+              <div id="draft-title-preview" class="text-[11.5px] text-ink-muted truncate mt-0.5 pl-3.5"></div>
+            </div>
+            <svg class="w-4 h-4 text-ink-muted shrink-0" fill="none" stroke="currentColor" stroke-width="1.5"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </div>
+        </button>
+
+        <!-- KARTU UNGGAH UTAMA DENGAN CROP-MARK PERCETAKAN -->
+        <section
+          class="ed-reveal ed-delay-1 crop-frame bg-white border border-paper-borderStrong/80 rounded-[6px] p-5 sm:p-6 shadow-[0_2px_8px_rgba(24,24,27,0.04)] space-y-4">
+          <span class="crop-corner crop-tl" aria-hidden="true"></span>
+          <span class="crop-corner crop-tr" aria-hidden="true"></span>
+          <span class="crop-corner crop-bl" aria-hidden="true"></span>
+          <span class="crop-corner crop-br" aria-hidden="true"></span>
+
+          <div class="flex items-center justify-between gap-2 pb-1">
+            <span class="font-mono text-[10.5px] uppercase tracking-wider text-ink-subtle">01 &middot; Masukan Naskah</span>
+            <span class="font-mono text-[10px] px-1.5 py-0.5 rounded-[3px] bg-paper-bg text-ink-muted border border-paper-border">.DOCX</span>
+          </div>
+
+          <!-- Area Drag & Drop -->
+          <div id="paper-dropzone" role="button" tabindex="0"
+            class="border border-dashed border-paper-borderStrong hover:border-ink-primary/80 bg-paper-bg/50 hover:bg-paper-bg rounded-[6px] px-5 py-7 text-center cursor-pointer transition">
+            <svg class="dropzone-icon w-6 h-6 mx-auto mb-2 text-ink-primary/80" fill="none" stroke="currentColor" stroke-width="1.5"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            <div class="text-[13.5px] font-medium text-ink">Pilih atau tarik berkas makalah ke sini</div>
+            <div class="font-mono text-[11px] text-ink-subtle mt-1">Hanya file Microsoft Word (.docx)</div>
+            <input id="paper-file-input" type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" class="hidden" />
+          </div>
+
+          <!-- Indikator Progres Ekstraksi -->
+          <div id="paper-progress" class="hidden space-y-1.5">
+            <div class="flex items-center justify-between text-[11.5px] text-ink-muted">
+              <span id="paper-progress-label">Membaca berkas dokumen...</span>
+              <span id="paper-progress-pct" class="font-mono tabular-nums">0%</span>
+            </div>
+            <div class="w-full h-1.5 bg-paper-border/70 rounded-full overflow-hidden">
+              <div id="paper-progress-bar" class="h-full bg-ink-primary transition-all" style="width: 0%;"></div>
+            </div>
+          </div>
+
+          <!-- Kotak Error -->
+          <div id="paper-error-box"
+            class="hidden border border-ink-errBorder bg-ink-errBg rounded-[5px] px-3.5 py-2.5 text-[12px] text-ink-err leading-relaxed">
+          </div>
+
+          <!-- Pratinjau Berkas Terunggah -->
+          <div id="paper-preview-card"
+            class="hidden border border-paper-border bg-paper-bg/50 rounded-[6px] p-3.5 space-y-3">
+            <div class="flex items-center justify-between gap-3">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div
+                  class="w-7 h-7 rounded-full bg-ink-okBg border border-ink-okBorder flex items-center justify-center text-ink-ok shrink-0">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                </div>
+                <div class="min-w-0">
+                  <div id="uploaded-file-name" class="text-[12.5px] font-medium text-ink truncate"></div>
+                  <div id="uploaded-file-meta" class="font-mono text-[10.5px] text-ink-muted tabular-nums"></div>
+                </div>
+              </div>
+              <button id="btn-remove-paper-file" type="button"
+                class="px-2 py-1 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink-err hover:bg-white transition cursor-pointer shrink-0">
+                Ganti
+              </button>
+            </div>
+
+            <pre id="uploaded-file-snippet"
+              class="bg-white border border-paper-border/70 rounded-[5px] p-2.5 text-[11.5px] leading-relaxed text-ink-muted whitespace-pre-wrap break-words font-sans max-h-28 overflow-y-auto ed-scroll m-0"></pre>
+          </div>
+
+          <!-- Opsi Tambahan & Pedoman Kampus (Tersimpan rapi dalam akordeon) -->
+          <details class="group border-t border-paper-border/70 pt-3">
+            <summary
+              class="flex items-center justify-between gap-2 text-[12px] text-ink-muted hover:text-ink cursor-pointer select-none">
+              <div class="flex items-center gap-2">
+                <span>Pedoman kampus &amp; opsi impor</span>
+                <span id="home-guideline-badge"
+                  class="hidden font-mono text-[10px] px-1.5 py-0.5 rounded-[4px] bg-ink-okBg border border-ink-okBorder text-ink-ok"></span>
+              </div>
+              <svg class="w-3.5 h-3.5 text-ink-subtle transition-transform group-open:rotate-180 shrink-0" fill="none"
+                stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+              </svg>
+            </summary>
+
+            <div class="pt-3.5 space-y-3.5">
+              <div class="space-y-2">
+                <div id="home-guideline-dropzone" role="button" tabindex="0"
+                  class="border border-dashed border-paper-borderStrong hover:border-ink-primary/70 bg-paper-bg/40 rounded-[5px] px-3 py-2.5 text-center cursor-pointer transition">
+                  <div class="text-[12px] font-medium text-ink">Unggah file pedoman kampus</div>
+                  <div id="home-guideline-status" class="font-mono text-[10px] text-ink-subtle mt-0.5">Opsional &mdash; atau
+                    pilih template di bawah</div>
+                  <input id="home-guideline-input" type="file" accept=".pdf,.docx,.txt,.md" class="hidden" />
+                </div>
+
+                <select id="home-guideline-select"
+                  class="w-full h-8 px-2.5 text-[12px] rounded-[5px] bg-white border border-paper-border focus:border-ink-primary outline-none text-ink">
+                  <option value="">Tanpa pedoman (format standar)</option>
+                  <option value="ui_ugm">Standar UI/UGM (A4 · 4-4-3-3 · TNR 12 · APA)</option>
+                  <option value="f4_teknik">Fakultas Teknik (F4 · 4-3-3-3 · Arial 11 · IEEE)</option>
+                  <option value="b5_ilmiah">Monograf / Ilmiah (B5 · Cambria 11 · 1.15 · APA)</option>
+                </select>
+              </div>
+
+              <div class="space-y-2 pt-1">
+                <label class="flex items-center gap-2 cursor-pointer text-[12px] text-ink-muted hover:text-ink">
+                  <input id="opt-auto-clean" type="checkbox" checked class="w-3.5 h-3.5 cursor-pointer" />
+                  <span>Rapikan otomatis saat masuk editor</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-[12px] text-ink-muted hover:text-ink">
+                  <input id="opt-detect-title" type="checkbox" checked class="w-3.5 h-3.5 cursor-pointer" />
+                  <span>Deteksi judul baris pertama untuk halaman cover</span>
+                </label>
+              </div>
+            </div>
+          </details>
+
+          <!-- Tombol Utama -->
+          <button id="btn-enter-with-file" type="button" disabled
+            class="ed-press w-full h-10 px-4 text-[13px] font-medium rounded-[5px] bg-ink-primary hover:bg-ink-primaryHover disabled:opacity-40 disabled:cursor-not-allowed text-white cursor-pointer inline-flex items-center justify-center gap-2">
+            <span>Buka di Editor</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+            </svg>
+          </button>
+        </section>
+
+        <!-- Aksi Cepat Tanpa Unggah File -->
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-ink-muted pl-0.5">
+          <button id="btn-start-blank" type="button"
+            class="inline-flex items-center gap-1.5 hover:text-ink transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-ink-subtle" fill="none" stroke="currentColor" stroke-width="1.5"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            <span>Mulai naskah kosong</span>
+          </button>
+
+          <span class="text-paper-borderStrong select-none">&middot;</span>
+
+          <button id="btn-start-sample" type="button"
+            class="inline-flex items-center gap-1.5 hover:text-ink transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-ink-subtle" fill="none" stroke="currentColor" stroke-width="1.5"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+            </svg>
+            <span>Coba contoh makalah</span>
+          </button>
+        </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- KOLOM KANAN: SPECIMEN INTERAKTIF SEBELUM vs SESUDAH (KERTAS A4)   -->
+      <!-- ================================================================= -->
+      <div class="ed-reveal ed-delay-2 lg:col-span-7 xl:col-span-7 flex flex-col">
+        <div class="crop-frame flex-1 flex flex-col justify-between bg-paper-desk/75 border border-paper-borderStrong/80 rounded-[6px] p-4 sm:p-6 space-y-4">
+          <span class="crop-corner crop-tl" aria-hidden="true"></span>
+          <span class="crop-corner crop-tr" aria-hidden="true"></span>
+          <span class="crop-corner crop-bl" aria-hidden="true"></span>
+          <span class="crop-corner crop-br" aria-hidden="true"></span>
+
+          <!-- Bar Switcher Interaktif -->
+          <div class="flex items-center justify-between gap-2 flex-wrap">
+            <div class="inline-flex items-center bg-white border border-paper-border rounded-[5px] p-0.5">
+              <button id="specimen-btn-before" type="button"
+                class="ed-press h-7 px-3 text-[11.5px] font-medium rounded-[4px] text-ink-muted hover:text-ink cursor-pointer">
+                Naskah Mentah
+              </button>
+              <button id="specimen-btn-after" type="button"
+                class="ed-press h-7 px-3 text-[11.5px] font-medium rounded-[4px] bg-ink-primary text-white cursor-pointer">
+                Hasil MakaRapi
+              </button>
+            </div>
+            <span id="specimen-spec-label" class="font-mono text-[10.5px] text-ink-muted tabular-nums">
+              A4 &middot; 4/4/3/3 cm &middot; TNR 12 pt
+            </span>
+          </div>
+
+          <!-- LEMBAR SPECIMEN 1: HASIL MAKARAPI (DEFAULT) -->
+          <div id="specimen-view-after" class="specimen-paper rounded-[2px] p-5 sm:p-7 w-full max-w-[680px] mx-auto my-auto">
+            <!-- Label Margin Teknis Halus -->
+            <div class="flex items-center justify-between font-mono text-[9px] text-ink-primary/65 mb-1.5 select-none">
+              <span>&#8593; 4 cm</span>
+              <span>Heading 1–3 &middot; Auto-Numbering</span>
+            </div>
+
+            <div class="specimen-margin-frame px-5 py-5 sm:px-6 sm:py-6"
+              style="font-family: 'Times New Roman', Georgia, serif; font-size: 11.5px; line-height: 1.55;">
+              <div class="text-center font-bold uppercase tracking-wide text-[12.5px] leading-snug mb-3.5">
+                <div>BAB I</div>
+                <div>PENDAHULUAN</div>
+              </div>
+
+              <div class="font-bold text-left mb-1">A. Latar Belakang</div>
+              <p class="text-justify m-0 mb-2.5" style="text-indent: 24px;">
+                Perkembangan kecerdasan buatan (<em>artificial intelligence</em>) mengubah aktivitas pembelajaran dan
+                analisis data di perguruan tinggi secara signifikan (Wijaya &amp; Santoso, 2024). Pemanfaatan
+                <em>machine learning</em> membantu dosen menyusun umpan balik akademik lebih terukur.
+              </p>
+
+              <div class="font-bold text-left mb-1 mt-3">B. Rumusan Masalah</div>
+              <div class="pl-5 space-y-1">
+                <div class="flex gap-2">
+                  <span>1.</span>
+                  <span>Bagaimana pemanfaatan <em>artificial intelligence</em> di lingkungan kampus?</span>
+                </div>
+                <div class="flex gap-2">
+                  <span>2.</span>
+                  <span>Apa tantangan integritas akademik yang perlu diantisipasi?</span>
+                </div>
+              </div>
+
+              <!-- Nomor Halaman Bawah Tengah -->
+              <div class="text-center text-[10px] text-ink mt-6 pt-1 select-none">1</div>
+            </div>
+
+            <div class="flex items-center justify-between font-mono text-[9px] text-ink-primary/65 mt-1.5 select-none">
+              <span>&#8592; 4 cm</span>
+              <span>3 cm &#8594;</span>
+            </div>
+          </div>
+
+          <!-- LEMBAR SPECIMEN 2: NASKAH MENTAH (SEBELUM DIRAPIKAN) -->
+          <div id="specimen-view-before" class="hidden specimen-paper rounded-[2px] p-5 sm:p-7 w-full max-w-[680px] mx-auto my-auto">
+            <div class="flex items-center justify-between font-mono text-[9px] text-ink-warn mb-1.5 select-none">
+              <span>Margin &amp; spasi tidak seragam</span>
+              <span>Belum ada penomoran</span>
+            </div>
+
+            <div class="border border-paper-border/70 px-4 py-4 sm:px-5 sm:py-5 font-sans text-[11px] leading-[1.35] text-ink/85 space-y-2.5">
+              <div><span class="specimen-md-raw">**BAB 1 pendahuluan**</span></div>
+              <div><span class="specimen-md-raw">###</span> A. Latar Belakang</div>
+              <p class="text-left m-0">
+                Perkembangan kecerdasan buatan (artificial intelligence) mengubah
+                <span class="specimen-typo-err">aktifitas</span> pembelajaran dan
+                <span class="specimen-typo-err">analisa</span> data di perguruan tinggi secara signifikan (Wijaya &amp; Santoso, 2024).<br />
+                Pemanfaatan machine learning membantu dosen menyusun umpan balik akademik lebih terukur.
+              </p>
+              <div class="pt-1">B. Rumusan Masalah</div>
+              <div class="space-y-1 text-ink-muted">
+                <div>1. Bagaimana pemanfaatan artificial intelligence di kampus?</div>
+                <div>1. Apa tantangan integritas akademik yang perlu diantisipasi?</div>
+              </div>
+              <div class="text-center text-[9.5px] font-mono text-ink-subtle/70 pt-4 select-none">
+                (tanpa nomor halaman &amp; Daftar Isi manual)
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between font-mono text-[9px] text-ink-subtle mt-1.5 select-none">
+              <span>Indentasi 0 cm</span>
+              <span>Simbol AI / PDF tersisa</span>
+            </div>
+          </div>
+
+          <!-- Status Ringkas Specimen -->
+          <div id="specimen-status-after" class="pt-0.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-okBg text-ink-ok border border-ink-okBorder">Print Layout &middot; id-ID</span>
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-white text-ink-muted border border-paper-border">Daftar Isi Otomatis</span>
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-white text-ink-muted border border-paper-border">Kata Baku &amp; Italic Asing</span>
+            </div>
+          </div>
+
+          <div id="specimen-status-before" class="hidden pt-0.5">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-warnBg text-ink-warn border border-ink-warnBorder">Simbol AI (**, ###)</span>
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-warnBg text-ink-warn border border-ink-warnBorder">2 Kata Tidak Baku</span>
+              <span class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-white text-ink-muted border border-paper-border">Istilah Asing Belum Italic</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- PANDUAN MOTION GRAPHIC INTERAKTIF 4 LANGKAH                         -->
+    <!-- =================================================================== -->
+    <section id="guide-motion-section" class="ed-reveal ed-delay-3 mt-14 sm:mt-16 pt-10 border-t border-paper-border space-y-6">
+      <!-- Header Seksi Panduan -->
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div class="space-y-1.5">
+          <div class="inline-flex items-center gap-2 font-mono text-[10.5px] tracking-wider uppercase text-ink-primary">
+            <span class="w-1.5 h-1.5 rounded-full bg-ink-primary"></span>
+            <span>Panduan Singkat &middot; Simulasi Interaktif</span>
+          </div>
+          <h2 class="font-serif text-[24px] sm:text-[28px] font-semibold tracking-tight text-ink leading-tight">
+            Dari naskah mentah ke Word siap cetak dalam 4 langkah.
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span id="mg-counter" class="font-mono text-[11px] text-ink-muted tabular-nums px-2">01 / 04</span>
+          <button id="mg-play-toggle" type="button"
+            class="ed-press inline-flex items-center gap-1.5 h-8 px-3 text-[11.5px] font-medium rounded-[5px] bg-white border border-paper-border hover:border-paper-borderStrong text-ink cursor-pointer">
+            <svg id="mg-icon-pause" class="w-3.5 h-3.5 text-ink-primary" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
+            </svg>
+            <svg id="mg-icon-play" class="hidden w-3.5 h-3.5 text-ink-primary" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+            </svg>
+            <span id="mg-play-label">Jeda</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Konten 2 Kolom: Timeline Langkah (Kiri) + Panggung Motion Graphic (Kanan) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
+
+        <!-- Kiri: 4 Langkah Klikable dengan Progress Bar -->
+        <div class="lg:col-span-5 flex flex-col gap-2.5">
+          <button type="button" data-mg-step="0"
+            class="mg-step-btn mg-step-active text-left w-full rounded-[6px] border border-ink-primary/45 bg-white p-4 transition cursor-pointer relative overflow-hidden">
+            <div class="flex items-start gap-3">
+              <span class="font-mono text-[11px] font-semibold text-ink-primary pt-0.5 shrink-0">01</span>
+              <div class="space-y-1 min-w-0">
+                <div class="text-[13.5px] font-semibold text-ink">Unggah Naskah .docx</div>
+                <p class="text-[12px] text-ink-muted leading-relaxed m-0">
+                  Tarik berkas Word mentah Anda; struktur BAB, tabel, gambar, daftar bernomor, dan huruf miring terbaca otomatis.
+                </p>
+              </div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-[2.5px] bg-paper-border/50">
+              <div class="mg-step-progress"></div>
+            </div>
+          </button>
+
+          <button type="button" data-mg-step="1"
+            class="mg-step-btn text-left w-full rounded-[6px] border border-paper-border bg-white/60 hover:bg-white p-4 transition cursor-pointer relative overflow-hidden">
+            <div class="flex items-start gap-3">
+              <span class="font-mono text-[11px] font-semibold text-ink-subtle pt-0.5 shrink-0">02</span>
+              <div class="space-y-1 min-w-0">
+                <div class="text-[13.5px] font-semibold text-ink">Sesuaikan Margin &amp; Pedoman</div>
+                <p class="text-[12px] text-ink-muted leading-relaxed m-0">
+                  Atur kertas A4/F4, margin 4-4-3-3, spasi baris, serta <em>spacing before/after</em> &mdash; atau unggah file pedoman kampus.
+                </p>
+              </div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-[2.5px] bg-paper-border/50">
+              <div class="mg-step-progress"></div>
+            </div>
+          </button>
+
+          <button type="button" data-mg-step="2"
+            class="mg-step-btn text-left w-full rounded-[6px] border border-paper-border bg-white/60 hover:bg-white p-4 transition cursor-pointer relative overflow-hidden">
+            <div class="flex items-start gap-3">
+              <span class="font-mono text-[11px] font-semibold text-ink-subtle pt-0.5 shrink-0">03</span>
+              <div class="space-y-1 min-w-0">
+                <div class="text-[13.5px] font-semibold text-ink">Rapikan, Kata Baku &amp; Italic Asing</div>
+                <p class="text-[12px] text-ink-muted leading-relaxed m-0">
+                  Bersihkan simbol AI/PDF, perbaiki kata tidak baku KBBI, dan miringkan istilah asing akademik secara terpisah 1 klik.
+                </p>
+              </div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-[2.5px] bg-paper-border/50">
+              <div class="mg-step-progress"></div>
+            </div>
+          </button>
+
+          <button type="button" data-mg-step="3"
+            class="mg-step-btn text-left w-full rounded-[6px] border border-paper-border bg-white/60 hover:bg-white p-4 transition cursor-pointer relative overflow-hidden">
+            <div class="flex items-start gap-3">
+              <span class="font-mono text-[11px] font-semibold text-ink-subtle pt-0.5 shrink-0">04</span>
+              <div class="space-y-1 min-w-0">
+                <div class="text-[13.5px] font-semibold text-ink">Unduh .docx Siap Cetak</div>
+                <p class="text-[12px] text-ink-muted leading-relaxed m-0">
+                  Dokumen terbuka stabil di <em>Print Layout</em> Microsoft Word lengkap dengan <em>Heading</em>, Daftar Isi, dan penomoran otomatis.
+                </p>
+              </div>
+            </div>
+            <div class="absolute bottom-0 left-0 right-0 h-[2.5px] bg-paper-border/50">
+              <div class="mg-step-progress"></div>
+            </div>
+          </button>
+        </div>
+
+        <!-- Kanan: Panggung Motion Graphic Vektor 60fps -->
+        <div class="lg:col-span-7 flex flex-col">
+          <div id="mg-stage"
+            class="mg-stage crop-frame flex-1 flex flex-col bg-paper-desk/80 border border-paper-borderStrong/80 rounded-[6px] overflow-hidden min-h-[340px] sm:min-h-[380px]">
+            <span class="crop-corner crop-tl" aria-hidden="true"></span>
+            <span class="crop-corner crop-tr" aria-hidden="true"></span>
+            <span class="crop-corner crop-bl" aria-hidden="true"></span>
+            <span class="crop-corner crop-br" aria-hidden="true"></span>
+
+            <!-- Chrome Atas Mini Aplikasi -->
+            <div class="h-9 bg-white border-b border-paper-border px-4 flex items-center justify-between gap-2 shrink-0">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-paper-borderStrong"></span>
+                <span class="w-2 h-2 rounded-full bg-paper-borderStrong"></span>
+                <span class="font-mono text-[10.5px] text-ink-muted ml-1">MakaRapi &mdash; Pratinjau Alur Kerja</span>
+              </div>
+              <span id="mg-stage-pill" class="font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-paper-bg text-ink-primary border border-paper-border">
+                Langkah 01: Impor .docx
+              </span>
+            </div>
+
+            <!-- Area Adegan -->
+            <div class="flex-1 p-5 sm:p-7 flex items-center justify-center relative overflow-hidden">
+
+              <!-- ADEGAN 0: UNGGAH .DOCX -->
+              <div id="mg-scene-0" class="w-full max-w-[520px]">
+                <div class="flex flex-col items-center gap-4 relative">
+                  <!-- Kartu file .docx meluncur ke dropzone -->
+                  <div class="mg-s1-file absolute top-3 z-20 inline-flex items-center gap-2.5 bg-white border border-ink-primary/40 shadow-md rounded-[6px] px-3.5 py-2 pointer-events-none">
+                    <span class="font-mono text-[10px] font-semibold px-1.5 py-0.5 rounded-[3px] bg-ink-primary text-white">.DOCX</span>
+                    <span class="text-[12px] font-medium text-ink">Makalah_AI_Kampus.docx</span>
+                  </div>
+
+                  <!-- Dropzone Mini -->
+                  <div class="mg-s1-zone w-full bg-white border-2 border-dashed border-paper-borderStrong rounded-[8px] px-6 py-8 text-center space-y-3">
+                    <svg class="w-7 h-7 mx-auto text-ink-primary/80" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                    </svg>
+                    <div class="text-[13px] font-medium text-ink">Mengekstrak struktur dokumen Word...</div>
+                    <div class="w-full max-w-[300px] mx-auto h-1.5 bg-paper-border/70 rounded-full overflow-hidden">
+                      <div class="mg-s1-bar h-full bg-ink-primary rounded-full"></div>
+                    </div>
+                  </div>
+
+                  <!-- Chip Struktur Terekstrak -->
+                  <div class="flex flex-wrap items-center justify-center gap-2">
+                    <span class="mg-s1-chip-1 font-mono text-[10.5px] px-2.5 py-1 rounded-[4px] bg-white border border-paper-border text-ink shadow-sm">3 BAB Terdeteksi</span>
+                    <span class="mg-s1-chip-2 font-mono text-[10.5px] px-2.5 py-1 rounded-[4px] bg-white border border-paper-border text-ink shadow-sm">1 Tabel &amp; 1 Gambar</span>
+                    <span class="mg-s1-chip-3 font-mono text-[10.5px] px-2.5 py-1 rounded-[4px] bg-white border border-paper-border text-ink shadow-sm">4 Sitasi APA</span>
+                    <span class="mg-s1-chip-4 font-mono text-[10.5px] px-2.5 py-1 rounded-[4px] bg-ink-okBg border border-ink-okBorder text-ink-ok">Siap Diedit</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ADEGAN 1: ATUR MARGIN & PEDOMAN -->
+              <div id="mg-scene-1" class="hidden w-full max-w-[560px]">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-4 items-center">
+                  <!-- Mini Panel Pengaturan -->
+                  <div class="sm:col-span-5 space-y-2">
+                    <div class="mg-s2-ctrl-1 bg-white border border-paper-border rounded-[5px] p-2.5">
+                      <div class="font-mono text-[9.5px] uppercase text-ink-subtle">Margin A4</div>
+                      <div class="font-mono text-[12px] font-semibold text-ink mt-0.5">4 &middot; 4 &middot; 3 &middot; 3 cm</div>
+                    </div>
+                    <div class="mg-s2-ctrl-2 bg-white border border-paper-border rounded-[5px] p-2.5">
+                      <div class="font-mono text-[9.5px] uppercase text-ink-subtle">Tipografi &amp; Spasi</div>
+                      <div class="font-mono text-[12px] font-semibold text-ink mt-0.5">Times New Roman &middot; 1.5</div>
+                    </div>
+                    <div class="mg-s2-ctrl-3 bg-white border border-paper-border rounded-[5px] p-2.5">
+                      <div class="font-mono text-[9.5px] uppercase text-ink-subtle">Spacing Paragraf</div>
+                      <div class="font-mono text-[12px] font-semibold text-ink mt-0.5">Before 0 pt &middot; After 0 pt</div>
+                    </div>
+                  </div>
+
+                  <!-- Mini Lembar A4 Menyesuaikan Margin -->
+                  <div class="sm:col-span-7">
+                    <div class="specimen-paper rounded-[3px] p-3">
+                      <div class="mg-s2-frame border border-dashed rounded-[2px]" style="font-family: 'Times New Roman', Georgia, serif;">
+                        <div class="text-center font-bold text-[11px] uppercase mb-2">BAB I PENDAHULUAN</div>
+                        <div class="font-bold text-[10.5px] mb-1">A. Latar Belakang</div>
+                        <p class="mg-s2-para text-justify text-[10px] text-ink/90 m-0">
+                          Pengaturan margin 4-4-3-3 cm, indentasi awal 1,25 cm, serta spasi baris 1,5 otomatis menyelaraskan seluruh halaman makalah sesuai pedoman kampus.
+                        </p>
+                      </div>
+                    </div>
+                    <div class="mg-s2-badge mt-2 flex items-center justify-between font-mono text-[10px] px-2.5 py-1 rounded-[4px] bg-ink-okBg border border-ink-okBorder text-ink-ok">
+                      <span>Audit Pedoman Kampus</span>
+                      <span class="font-semibold">100% Terpenuhi</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ADEGAN 2: RAPIKAN, KATA BAKU & ITALIC ASING -->
+              <div id="mg-scene-2" class="hidden w-full max-w-[540px]">
+                <div class="bg-white border border-paper-borderStrong/80 rounded-[6px] shadow-sm overflow-hidden">
+                  <!-- Mini Toolbar Editor -->
+                  <div class="px-3.5 py-2 bg-paper-bg/70 border-b border-paper-border flex items-center gap-1.5 flex-wrap">
+                    <span class="mg-s3-btn-1 font-sans text-[11px] font-medium px-2.5 py-1 rounded-[4px] border border-paper-border bg-white text-ink-muted">Rapikan</span>
+                    <span class="mg-s3-btn-2 font-sans text-[11px] font-medium px-2.5 py-1 rounded-[4px] border border-paper-border bg-white text-ink-muted">Kata Baku</span>
+                    <span class="mg-s3-btn-3 font-sans text-[11px] font-medium px-2.5 py-1 rounded-[4px] border border-paper-border bg-white text-ink-muted">Italic Asing</span>
+                  </div>
+
+                  <!-- Konten Bertransformasi -->
+                  <div class="p-5 space-y-3" style="font-family: 'Times New Roman', Georgia, serif;">
+                    <div>
+                      <div class="mg-s3-raw-bab font-mono text-[11.5px] text-ink-err bg-ink-errBg inline-block px-2 py-0.5 rounded-[3px]">
+                        **BAB 1 pendahuluan**
+                      </div>
+                      <div class="mg-s3-clean-bab text-center font-bold uppercase text-[13px] tracking-wide text-ink">
+                        BAB I PENDAHULUAN
+                      </div>
+                    </div>
+
+                    <p class="text-[12.5px] leading-[1.7] text-ink text-justify m-0" style="text-indent: 22px;">
+                      Pemanfaatan teknologi
+                      <span class="mg-s3-italic">artificial intelligence</span> dan
+                      <span class="mg-s3-italic">chatbot</span> mendukung
+                      <span class="mg-s3-kbbi">aktivitas</span> pembelajaran serta
+                      <span class="mg-s3-kbbi">analisis</span> data riset mahasiswa secara sistematis di perguruan tinggi.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ADEGAN 3: UNDUH .DOCX SIAP CETAK -->
+              <div id="mg-scene-3" class="hidden w-full max-w-[540px]">
+                <div class="space-y-4">
+                  <!-- Mini Header dengan Tombol Unduh .docx -->
+                  <div class="bg-white border border-paper-border rounded-[6px] px-4 py-2.5 flex items-center justify-between relative">
+                    <span class="font-serif text-[14px] font-semibold text-ink">MakaRapi</span>
+                    <div class="relative inline-flex items-center gap-2">
+                      <span class="h-7 px-2.5 inline-flex items-center text-[11px] rounded-[4px] border border-paper-border text-ink-muted">PDF</span>
+                      <span class="mg-s4-btn h-7 px-3 inline-flex items-center gap-1.5 text-[11px] font-medium rounded-[4px] bg-ink-primary text-white">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                        </svg>
+                        <span>Unduh .docx</span>
+                      </span>
+                      <!-- Kursor Vektor -->
+                      <svg class="mg-s4-cursor w-5 h-5 text-ink absolute -bottom-3 right-3 pointer-events-none drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M5.5 3.21V20.8l4.9-4.7 3.1 6.7 2.2-1-3.1-6.7 6.3-.3L5.5 3.21z" />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <!-- Kartu Hasil Word Siap Cetak -->
+                  <div class="mg-s4-card bg-white border border-paper-borderStrong rounded-[6px] p-4 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between gap-2 pb-2.5 border-b border-paper-border/70">
+                      <div class="flex items-center gap-2.5 min-w-0">
+                        <span class="font-mono text-[10px] font-semibold px-2 py-1 rounded-[4px] bg-ink-primary text-white shrink-0">DOCX</span>
+                        <div class="min-w-0">
+                          <div class="text-[12.5px] font-semibold text-ink truncate">makalah_siap_cetak.docx</div>
+                          <div class="font-mono text-[10px] text-ink-muted">OOXML Native &middot; Siap dibuka di Microsoft Word</div>
+                        </div>
+                      </div>
+                      <span class="font-mono text-[10px] text-ink-ok bg-ink-okBg border border-ink-okBorder px-2 py-0.5 rounded-[3px] shrink-0">Selesai</span>
+                    </div>
+
+                    <!-- Mini Daftar Isi & Struktur -->
+                    <div class="bg-paper-bg/60 rounded-[4px] p-3 font-serif text-[11px] text-ink space-y-1">
+                      <div class="flex items-baseline justify-between font-bold">
+                        <span>DAFTAR ISI</span><span class="font-mono text-[10px] text-ink-muted">ii</span>
+                      </div>
+                      <div class="flex items-baseline justify-between">
+                        <span>BAB I PENDAHULUAN</span><span class="font-mono text-[10px] text-ink-muted">1</span>
+                      </div>
+                      <div class="flex items-baseline justify-between pl-4 text-ink-muted">
+                        <span>A. Latar Belakang &middot; B. Rumusan Masalah (1&ndash;4)</span><span class="font-mono text-[10px]">1</span>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1.5">
+                      <span class="mg-s4-ok-1 font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-okBg text-ink-ok border border-ink-okBorder">&#10003; Print Layout Stabil</span>
+                      <span class="mg-s4-ok-2 font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-okBg text-ink-ok border border-ink-okBorder">&#10003; Heading 1&ndash;3 &amp; TOC</span>
+                      <span class="mg-s4-ok-3 font-mono text-[10px] px-2 py-0.5 rounded-[3px] bg-ink-okBg text-ink-ok border border-ink-okBorder">&#10003; Auto-Numbering Word</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer Kolofon Editorial -->
+  <footer class="border-t border-paper-border/70 py-5 px-5 sm:px-8 lg:px-12">
+    <div
+      class="w-full flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-subtle">
+      <div class="flex items-center gap-2">
+        <span class="font-serif text-[13px] font-semibold text-ink">MakaRapi</span>
+        <span>&middot;</span>
+        <span>Sistem Perapihan &amp; Format Makalah Akademik</span>
+      </div>
+      <span id="home-engine-indicator" class="inline-flex items-center gap-1.5 font-mono text-[10.5px]">
+        <span id="home-engine-dot" class="w-1.5 h-1.5 rounded-full bg-paper-borderStrong"></span>
+        <span id="home-engine-label">Mode Lokal (Browser)</span>
+      </span>
+    </div>
+  </footer>
+
+  <!-- Toast Notifikasi -->
+  <div id="toast-container"
+    class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] pointer-events-none"></div>
+
+  <!-- Client API Hybrid, PWA Offline Cache, & Logika Menu Utama -->
+  <script defer src="js/pwa.js"></script>
+  <script defer src="js/api-client.js"></script>
+  <script defer src="js/home.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1D3557" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="MakaRapi" />
+  <title>MakaRapi — Editor Perapihan &amp; Format Makalah Akademik</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/favicon.png" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <!-- Google Fonts: Newsreader, IBM Plex Sans, IBM Plex Mono, Carlito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Carlito:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Newsreader:opsz,wght@6..72,600;6..72,700&display=swap"
+    rel="stylesheet" />
+
+  <!-- Tailwind CSS CDN & Konfigurasi Tema -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="js/tailwind-config.js"></script>
+
+  <!-- Pustaka Ekstraksi Pedoman: PDF.js & Mammoth.js (DOCX) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- Stylesheet Utama (Dipisahkan ke css/style.css) -->
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Aturan @page Dinamis untuk Cetak PDF -->
+  <style id="dynamic-print-style"></style>
+</head>
+
+<body class="bg-paper-bg text-ink antialiased selection:bg-ink-primary/15 selection:text-ink-primary">
+
+  <!-- ======================================================================= -->
+  <!-- WORKBENCH UTAMA (FULL VIEWPORT 100vh)                                   -->
+  <!-- ======================================================================= -->
+  <div id="app-shell" class="flex flex-col h-screen overflow-hidden">
+
+    <!-- HEADER ATAS MINIMALIS (48px) -->
+    <header
+      class="h-12 bg-white border-b border-paper-border/80 px-3 sm:px-4 flex items-center justify-between gap-2 shrink-0 z-30">
+      <!-- Wordmark Editorial -->
+      <div class="flex items-center gap-2.5 min-w-0">
+        <a href="home.html" title="Kembali ke Menu Utama"
+          class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition no-underline shrink-0">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+        </a>
+        <div class="flex items-center gap-2">
+          <svg class="w-5 h-5 shrink-0" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true">
+            <rect x="4" y="3" width="20" height="22" rx="2" fill="#FFFFFF" stroke="#1D3557" stroke-width="1.5" />
+            <path d="M1 7V3.5C1 2.12 2.12 1 3.5 1H7" stroke="#1D3557" stroke-width="1.3" stroke-linecap="square" />
+            <path d="M27 21V24.5C27 25.88 25.88 27 24.5 27H21" stroke="#1D3557" stroke-width="1.3"
+              stroke-linecap="square" />
+            <path d="M8.5 19V9.5L14 15.2L19.5 9.5V19" stroke="#1D3557" stroke-width="1.75" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <line x1="8.5" y1="21.8" x2="19.5" y2="21.8" stroke="#18181B" stroke-opacity="0.35" stroke-width="1.1" />
+          </svg>
+          <span class="font-serif text-[18px] font-semibold tracking-tight text-ink leading-none">MakaRapi</span>
+        </div>
+        <span class="hidden md:inline-block h-3.5 w-px bg-paper-border"></span>
+
+        <!-- Indikator Status Kepatuhan Pedoman di Header -->
+        <button id="header-compliance-btn" type="button" title="Lihat status kepatuhan pedoman"
+          class="hidden md:inline-flex items-center gap-1.5 px-2 py-1 text-[11px] font-medium rounded-[4px] border border-paper-border bg-paper-bg text-ink-muted hover:border-paper-borderStrong transition cursor-pointer">
+          <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span id="header-compliance-text" class="font-mono tabular-nums">Tanpa Pedoman</span>
+        </button>
+      </div>
+
+      <!-- Tombol Aksi Cepat di Kanan -->
+      <div class="flex items-center gap-1 overflow-x-auto">
+        <button id="btn-header-pedoman" type="button" title="Buka tab Unggah Pedoman Makalah/Skripsi"
+          class="inline-flex items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition cursor-pointer shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+          </svg>
+          <span class="hidden sm:inline">Pedoman</span>
+        </button>
+
+        <button id="btn-demo-complete" type="button"
+          title="Muat contoh makalah lengkap dengan tabel, gambar, dan sitasi"
+          class="inline-flex items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition cursor-pointer shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          <span class="hidden md:inline">Contoh</span>
+        </button>
+
+        <button id="btn-copy-clean" type="button" title="Salin teks makalah bersih ke clipboard"
+          class="inline-flex items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition cursor-pointer shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
+          </svg>
+          <span class="hidden lg:inline">Salin</span>
+        </button>
+
+        <button id="btn-cloud-account" type="button" title="Sinkronisasi Cloud & Akun Supabase (RLS)"
+          class="inline-flex items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition cursor-pointer shrink-0">
+          <span id="cloud-account-dot" class="w-1.5 h-1.5 rounded-full bg-paper-borderStrong"></span>
+          <span id="cloud-account-label" class="hidden sm:inline">Cloud</span>
+        </button>
+
+        <span class="h-3.5 w-px bg-paper-border mx-1 shrink-0"></span>
+
+        <button id="btn-print-pdf" type="button" title="Cetak atau simpan sebagai PDF"
+          class="inline-flex items-center gap-1.5 h-8 px-2.5 text-[12px] font-medium rounded-[5px] bg-white hover:bg-paper-bg text-ink border border-paper-border hover:border-paper-borderStrong transition cursor-pointer shrink-0">
+          <svg class="w-3.5 h-3.5 text-ink-muted" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5z" />
+          </svg>
+          <span>PDF</span>
+        </button>
+
+        <button id="btn-export-word" type="button" title="Unduh dokumen Microsoft Word (.docx)"
+          class="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium rounded-[5px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer shrink-0">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.7" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          <span>Unduh .docx</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- NAVIGASI PANEL MOBILE / TABLET (< lg) -->
+    <div
+      class="lg:hidden bg-paper-bg border-b border-paper-border px-3 h-10 flex items-center justify-between gap-2 shrink-0">
+      <div class="flex items-center gap-1">
+        <button type="button" data-pane="sidebar"
+          class="mobile-pane-btn px-2.5 py-1 text-[12px] font-medium rounded-[4px] border transition cursor-pointer">
+          Pengaturan
+        </button>
+        <button type="button" data-pane="editor"
+          class="mobile-pane-btn px-2.5 py-1 text-[12px] font-medium rounded-[4px] border transition cursor-pointer">
+          Editor
+        </button>
+        <button type="button" data-pane="preview"
+          class="mobile-pane-btn px-2.5 py-1 text-[12px] font-medium rounded-[4px] border transition cursor-pointer">
+          Pratinjau
+        </button>
+      </div>
+      <div class="font-mono text-[11px] text-ink-muted tabular-nums">
+        <span id="mobile-stat-pages">0</span> hal &middot; <span id="mobile-stat-words">0</span> kata
+      </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- WORKBENCH 3 PANEL (PENGATURAN KIRI | EDITOR TENGAH | PRATINJAU KANAN) -->
+    <!-- ===================================================================== -->
+    <main class="flex-1 flex overflow-hidden relative">
+
+      <!-- =================================================================== -->
+      <!-- PANEL 1 (KIRI): PENGATURAN DOKUMEN                                  -->
+      <!-- =================================================================== -->
+      <aside id="pane-sidebar"
+        class="w-full lg:w-[268px] xl:w-[288px] 2xl:w-[308px] bg-white border-r border-paper-border/80 flex flex-col h-full overflow-hidden shrink-0">
+
+        <!-- Navigasi Tab Underline Bersih -->
+        <nav class="bg-white border-b border-paper-border/80 grid grid-cols-4 shrink-0" role="tablist">
+          <button type="button" data-sidebar-tab="format" role="tab"
+            class="sidebar-tab-btn h-10 text-[12px] font-medium border-b-2 transition text-center cursor-pointer">
+            Format
+          </button>
+          <button type="button" data-sidebar-tab="pedoman" role="tab"
+            class="sidebar-tab-btn h-10 text-[12px] font-medium border-b-2 transition text-center cursor-pointer flex items-center justify-center gap-1">
+            <span>Pedoman</span>
+            <span id="tab-pedoman-dot" class="hidden w-1.5 h-1.5 rounded-full bg-ink-ok"></span>
+          </button>
+          <button type="button" data-sidebar-tab="citation" role="tab"
+            class="sidebar-tab-btn h-10 text-[12px] font-medium border-b-2 transition text-center cursor-pointer">
+            Sitasi
+          </button>
+          <button type="button" data-sidebar-tab="structure" role="tab"
+            class="sidebar-tab-btn h-10 text-[12px] font-medium border-b-2 transition text-center cursor-pointer">
+            Struktur
+          </button>
+        </nav>
+
+        <!-- Konten Scrollable Inspektor -->
+        <div class="flex-1 overflow-y-auto ed-scroll divide-y divide-paper-border/60">
+
+          <!-- --------------------------------------------------------------- -->
+          <!-- TAB 1: FORMAT AKADEMIK                                          -->
+          <!-- --------------------------------------------------------------- -->
+          <div id="sidebar-tab-format" class="sidebar-panel divide-y divide-paper-border/60">
+
+            <!-- Kertas & Margin -->
+            <section class="p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Kertas &amp;
+                  Margin</span>
+                <span id="paper-dim-label" class="font-mono text-[10.5px] text-ink-subtle tabular-nums">21 &times; 29.7
+                  cm</span>
+              </div>
+
+              <div>
+                <label for="paper-size" class="block text-[11px] font-medium text-ink-muted mb-1">Ukuran Kertas</label>
+                <select id="paper-size"
+                  class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                  <option value="A4">A4 (21,0 &times; 29,7 cm)</option>
+                  <option value="F4">F4 / Folio (21,5 &times; 33,0 cm)</option>
+                  <option value="Letter">Letter / Kuarto (21,59 &times; 27,94 cm)</option>
+                  <option value="B5">B5 (17,6 &times; 25,0 cm)</option>
+                </select>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-medium text-ink-muted mb-1">Margin (cm)</div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  <div>
+                    <label for="margin-top" class="block text-[10px] text-ink-subtle mb-0.5">Atas</label>
+                    <input id="margin-top" type="number" step="0.1" min="0.5" max="8"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="margin-left" class="block text-[10px] text-ink-subtle mb-0.5">Kiri</label>
+                    <input id="margin-left" type="number" step="0.1" min="0.5" max="8"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="margin-bottom" class="block text-[10px] text-ink-subtle mb-0.5">Bawah</label>
+                    <input id="margin-bottom" type="number" step="0.1" min="0.5" max="8"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="margin-right" class="block text-[10px] text-ink-subtle mb-0.5">Kanan</label>
+                    <input id="margin-right" type="number" step="0.1" min="0.5" max="8"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Tipografi & Paragraf -->
+            <section class="p-4 space-y-3 bg-white">
+              <div class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Tipografi &amp; Paragraf
+              </div>
+
+              <div>
+                <label for="font-family" class="block text-[11px] font-medium text-ink-muted mb-1">Jenis Font</label>
+                <select id="font-family"
+                  class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                  <option value="Times New Roman">Times New Roman</option>
+                  <option value="Arial">Arial</option>
+                  <option value="Calibri">Calibri</option>
+                  <option value="Georgia">Georgia</option>
+                  <option value="Cambria">Cambria</option>
+                  <option value="Garamond">Garamond</option>
+                  <option value="Book Antiqua">Book Antiqua</option>
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="font-size" class="block text-[11px] font-medium text-ink-muted mb-1">Font Isi (pt)</label>
+                  <select id="font-size"
+                    class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                    <option value="10">10 pt</option>
+                    <option value="11">11 pt</option>
+                    <option value="12">12 pt</option>
+                    <option value="13">13 pt</option>
+                    <option value="14">14 pt</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="heading-font-size" class="block text-[11px] font-medium text-ink-muted mb-1">Judul BAB
+                    (pt)</label>
+                  <select id="heading-font-size"
+                    class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                    <option value="12">12 pt</option>
+                    <option value="13">13 pt</option>
+                    <option value="14">14 pt</option>
+                    <option value="16">16 pt</option>
+                    <option value="18">18 pt</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="line-spacing" class="block text-[11px] font-medium text-ink-muted mb-1">Spasi
+                    Baris</label>
+                  <select id="line-spacing"
+                    class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                    <option value="1">1.0</option>
+                    <option value="1.15">1.15</option>
+                    <option value="1.5">1.5</option>
+                    <option value="2">2.0</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="first-indent" class="block text-[11px] font-medium text-ink-muted mb-1">Indentasi
+                    (cm)</label>
+                  <input id="first-indent" type="number" step="0.05" min="0" max="2.5"
+                    class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <div class="text-[11px] font-medium text-ink-muted">Jarak Paragraf / Spacing (pt)</div>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label for="space-before" class="block text-[10px] text-ink-subtle mb-0.5">Before (Sebelum)</label>
+                    <input id="space-before" type="number" step="1" min="0" max="36"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="space-after" class="block text-[10px] text-ink-subtle mb-0.5">After (Sesudah)</label>
+                    <input id="space-after" type="number" step="1" min="0" max="36"
+                      class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                </div>
+                <label class="flex items-center gap-2 pt-0.5 cursor-pointer select-none">
+                  <input id="toggle-spacing-headings" type="checkbox" class="w-3.5 h-3.5 rounded-[3px] accent-ink-primary" />
+                  <span class="text-[11px] text-ink-muted">Berlaku juga untuk judul BAB &amp; Sub-bab</span>
+                </label>
+              </div>
+
+              <div>
+                <div class="text-[11px] font-medium text-ink-muted mb-1">Perataan Teks</div>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <label
+                    class="flex items-center justify-center gap-1.5 h-8 rounded-[4px] border border-paper-border bg-paper-bg cursor-pointer has-[:checked]:border-ink-primary has-[:checked]:bg-white text-[12px] font-medium">
+                    <input type="radio" name="textAlign" value="justify" class="w-3.5 h-3.5" />
+                    <span>Rata Kanan-Kiri</span>
+                  </label>
+                  <label
+                    class="flex items-center justify-center gap-1.5 h-8 rounded-[4px] border border-paper-border bg-paper-bg cursor-pointer has-[:checked]:border-ink-primary has-[:checked]:bg-white text-[12px] font-medium">
+                    <input type="radio" name="textAlign" value="left" class="w-3.5 h-3.5" />
+                    <span>Rata Kiri</span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            <!-- Penomoran Halaman Dinamis -->
+            <section class="p-4 space-y-2.5">
+              <div class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Penomoran Halaman</div>
+              <select id="page-number-mode"
+                class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                <option value="skripsi">Standar Skripsi (Awal BAB Bawah, Lanjutan Kanan Atas)</option>
+                <option value="top-right">Pojok Kanan Atas Semua (Selain Cover)</option>
+                <option value="bottom-center">Tengah Bawah Semua (Selain Cover)</option>
+                <option value="none">Tanpa Nomor Halaman</option>
+              </select>
+              <p id="page-num-desc" class="text-[11px] text-ink-muted leading-snug">
+                Cover tanpa nomor; halaman awal Romawi (i, ii) di tengah bawah; awal BAB di tengah bawah; halaman
+                lanjutan non-BAB di pojok kanan atas.
+              </p>
+            </section>
+
+            <!-- Komponen Dokumen & Identitas Cover / Kata Pengantar -->
+            <section class="p-4 space-y-2.5 bg-white">
+              <div class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Komponen Dokumen</div>
+
+              <div class="space-y-1.5">
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Garis Bantu Margin (Layar)</span>
+                  <input id="toggle-margin-guides" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Halaman Sampul (Cover)</span>
+                  <input id="toggle-cover" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Abstrak (Spasi 1.0)</span>
+                  <input id="toggle-abstract" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Kata Pengantar</span>
+                  <input id="toggle-preface" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Daftar Isi Otomatis</span>
+                  <input id="toggle-toc" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Daftar Tabel Otomatis</span>
+                  <input id="toggle-lot" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+                <label class="flex items-center justify-between py-0.5 cursor-pointer">
+                  <span class="text-[12px] text-ink">Daftar Gambar Otomatis</span>
+                  <input id="toggle-lof" type="checkbox" class="w-3.5 h-3.5 cursor-pointer" />
+                </label>
+              </div>
+
+              <!-- Akordeon Identitas Cover -->
+              <details class="border border-paper-border/80 rounded-[5px] bg-paper-bg/40 group">
+                <summary
+                  class="px-2.5 py-2 text-[12px] font-semibold text-ink cursor-pointer select-none flex items-center justify-between">
+                  <span>Identitas Halaman Cover</span>
+                  <svg class="w-3.5 h-3.5 text-ink-muted transition-transform group-open:rotate-180" fill="none"
+                    stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </summary>
+                <div class="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-paper-border bg-white">
+                  <div>
+                    <label for="cover-title" class="block text-[11px] font-medium text-ink-muted mb-0.5">Judul
+                      Makalah</label>
+                    <textarea id="cover-title" rows="2" placeholder="Judul makalah..."
+                      class="w-full px-2 py-1.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none resize-y"></textarea>
+                  </div>
+                  <div>
+                    <label for="cover-subtitle" class="block text-[11px] font-medium text-ink-muted mb-0.5">Mata Kuliah
+                      / Keterangan Tugas</label>
+                    <input id="cover-subtitle" type="text" placeholder="Disusun untuk Memenuhi Tugas..."
+                      class="w-full h-8 px-2 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="cover-lecturer" class="block text-[11px] font-medium text-ink-muted mb-0.5">Dosen
+                      Pengampu</label>
+                    <input id="cover-lecturer" type="text" placeholder="Nama Dosen Pengampu"
+                      class="w-full h-8 px-2 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <div class="text-[11px] font-medium text-ink-muted mb-1">Logo Institusi</div>
+                    <div class="flex items-center gap-2">
+                      <div id="cover-logo-thumb"
+                        class="w-10 h-10 rounded-[4px] bg-paper-bg border border-paper-border flex items-center justify-center overflow-hidden shrink-0">
+                      </div>
+                      <div class="flex flex-wrap gap-1">
+                        <label
+                          class="px-2 py-1 text-[11px] font-medium rounded-[4px] border border-paper-border bg-paper-bg hover:border-paper-borderStrong text-ink cursor-pointer">
+                          Unggah
+                          <input id="cover-logo-input" type="file" accept="image/*" class="hidden" />
+                        </label>
+                        <button id="btn-default-emblem" type="button"
+                          class="px-2 py-1 text-[11px] font-medium rounded-[4px] border border-paper-border bg-white hover:bg-paper-bg text-ink-muted cursor-pointer">
+                          Emblem
+                        </button>
+                        <button id="btn-remove-logo" type="button"
+                          class="px-2 py-1 text-[11px] font-medium rounded-[4px] border border-ink-errBorder bg-ink-errBg text-ink-err cursor-pointer">
+                          Hapus
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label for="cover-authors" class="block text-[11px] font-medium text-ink-muted mb-0.5">Nama &amp;
+                      NIM Penyusun (1 per baris)</label>
+                    <textarea id="cover-authors" rows="3" placeholder="Nama Lengkap (NIM)"
+                      class="w-full px-2 py-1.5 font-mono text-[11px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none"></textarea>
+                  </div>
+                  <div>
+                    <label for="cover-prodi" class="block text-[11px] font-medium text-ink-muted mb-0.5">Program Studi /
+                      Fakultas</label>
+                    <textarea id="cover-prodi" rows="2" placeholder="PROGRAM STUDI...&#10;FAKULTAS..."
+                      class="w-full px-2 py-1.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none"></textarea>
+                  </div>
+                  <div class="grid grid-cols-3 gap-1.5">
+                    <div class="col-span-2">
+                      <label for="cover-university"
+                        class="block text-[11px] font-medium text-ink-muted mb-0.5">Universitas / Institusi</label>
+                      <input id="cover-university" type="text" placeholder="UNIVERSITAS..."
+                        class="w-full h-8 px-2 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                    </div>
+                    <div>
+                      <label for="cover-year" class="block text-[11px] font-medium text-ink-muted mb-0.5">Tahun</label>
+                      <input id="cover-year" type="text" placeholder="2026"
+                        class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <!-- Akordeon Abstrak -->
+              <details class="border border-paper-border rounded-[4px] bg-paper-bg/60 group">
+                <summary
+                  class="px-2.5 py-2 text-[12px] font-semibold text-ink cursor-pointer select-none flex items-center justify-between">
+                  <span>Teks Abstrak &amp; Kata Kunci</span>
+                  <svg class="w-3.5 h-3.5 text-ink-muted transition-transform group-open:rotate-180" fill="none"
+                    stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </summary>
+                <div class="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-paper-border bg-white">
+                  <textarea id="abstract-body" rows="4" placeholder="Tuliskan ringkasan makalah/penelitian (150–250 kata)..."
+                    class="w-full px-2 py-1.5 text-[12px] leading-relaxed rounded-[4px] border border-paper-border focus:border-ink-primary outline-none"></textarea>
+                  <div>
+                    <label for="abstract-keywords" class="block text-[10px] font-medium text-ink-muted mb-0.5">Kata Kunci (pisah koma)</label>
+                    <input id="abstract-keywords" type="text" placeholder="kecerdasan buatan, pendidikan tinggi, etika akademik"
+                      class="w-full h-8 px-2 text-[11px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                </div>
+              </details>
+
+              <!-- Akordeon Kata Pengantar -->
+              <details class="border border-paper-border rounded-[4px] bg-paper-bg/60 group">
+                <summary
+                  class="px-2.5 py-2 text-[12px] font-semibold text-ink cursor-pointer select-none flex items-center justify-between">
+                  <span>Teks Kata Pengantar</span>
+                  <svg class="w-3.5 h-3.5 text-ink-muted transition-transform group-open:rotate-180" fill="none"
+                    stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                  </svg>
+                </summary>
+                <div class="px-2.5 pb-2.5 pt-1 space-y-2 border-t border-paper-border bg-white">
+                  <textarea id="preface-body" rows="5" placeholder="Tuliskan teks Kata Pengantar..."
+                    class="w-full px-2 py-1.5 text-[12px] leading-relaxed rounded-[4px] border border-paper-border focus:border-ink-primary outline-none"></textarea>
+                  <div class="grid grid-cols-2 gap-1.5">
+                    <div>
+                      <label for="preface-city-date" class="block text-[10px] font-medium text-ink-muted mb-0.5">Kota
+                        &amp; Tanggal</label>
+                      <input id="preface-city-date" type="text" placeholder="Semarang, November 2026"
+                        class="w-full h-8 px-2 text-[11px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                    </div>
+                    <div>
+                      <label for="preface-signature" class="block text-[10px] font-medium text-ink-muted mb-0.5">Penanda
+                        Tangan</label>
+                      <input id="preface-signature" type="text" placeholder="Penyusun"
+                        class="w-full h-8 px-2 text-[11px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </section>
+
+            <!-- Reset Dokumen -->
+            <section class="p-3.5">
+              <button id="btn-reset-doc" type="button"
+                class="w-full h-8 px-3 text-[12px] font-medium rounded-[4px] bg-white border border-ink-errBorder text-ink-err hover:bg-ink-errBg transition cursor-pointer inline-flex items-center justify-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Reset Seluruh Dokumen
+              </button>
+            </section>
+          </div>
+
+          <!-- --------------------------------------------------------------- -->
+          <!-- TAB 2: UPLOAD PEDOMAN & AUDIT KEPATUHAN                         -->
+          <!-- --------------------------------------------------------------- -->
+          <div id="sidebar-tab-pedoman" class="sidebar-panel hidden divide-y divide-paper-border">
+
+            <!-- Panel Status Audit Kepatuhan Real-Time -->
+            <section id="guideline-audit-section" class="hidden p-3.5 bg-white space-y-2.5">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Profil Pedoman Aktif
+                  </div>
+                  <div id="audit-profile-name" class="text-[12px] font-semibold text-ink truncate mt-0.5"></div>
+                </div>
+                <span id="audit-score-badge"
+                  class="font-mono text-[11px] font-semibold tabular-nums px-2 py-0.5 rounded-[4px] border shrink-0"></span>
+              </div>
+
+              <!-- Daftar Penyimpangan -->
+              <div id="audit-deviations-box"
+                class="hidden space-y-1.5 border border-ink-warnBorder bg-ink-warnBg rounded-[4px] p-2.5">
+                <div class="text-[11px] font-semibold text-ink-warn">Penyimpangan dari Pedoman Terdeteksi</div>
+                <ul id="audit-deviations-list" class="text-[11px] text-ink space-y-1"></ul>
+                <button id="btn-reapply-guideline" type="button"
+                  class="w-full h-7 mt-1 text-[11px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer">
+                  Sesuaikan Kembali ke Pedoman
+                </button>
+              </div>
+
+              <div class="flex items-center justify-between pt-0.5 gap-2">
+                <span id="audit-rule-count" class="font-mono text-[11px] text-ink-muted tabular-nums"></span>
+                <div class="flex items-center gap-2.5 shrink-0">
+                  <button id="btn-save-guideline-db" type="button"
+                    class="hidden text-[11px] font-medium text-ink-primary hover:underline cursor-pointer">
+                    Simpan ke DB
+                  </button>
+                  <button id="btn-clear-guideline" type="button"
+                    class="text-[11px] font-medium text-ink-err hover:underline cursor-pointer">
+                    Hapus Profil
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <!-- Sumber Pedoman: Unggah File vs Tempel Teks -->
+            <section class="p-3.5 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Impor Pedoman
+                  Kampus</span>
+                <div class="inline-flex border border-paper-border rounded-[4px] bg-white overflow-hidden">
+                  <button type="button" data-gmode="file"
+                    class="gmode-btn px-2 py-1 text-[11px] font-medium transition cursor-pointer">Unggah File</button>
+                  <button type="button" data-gmode="text"
+                    class="gmode-btn px-2 py-1 text-[11px] font-medium border-l border-paper-border transition cursor-pointer">Tempel
+                    Teks</button>
+                </div>
+              </div>
+
+              <!-- Mode Unggah File (.pdf, .docx, .txt, .md) -->
+              <div id="guideline-mode-file" class="space-y-2.5">
+                <div id="guideline-dropzone"
+                  class="border border-dashed border-paper-borderStrong hover:border-ink-primary bg-white rounded-[4px] p-4 text-center cursor-pointer transition">
+                  <svg class="w-5 h-5 mx-auto text-ink-muted mb-1.5" fill="none" stroke="currentColor"
+                    stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                  </svg>
+                  <div class="text-[12px] font-medium text-ink">Tarik file pedoman atau klik untuk memilih</div>
+                  <div class="font-mono text-[10px] text-ink-muted mt-0.5">.PDF &middot; .DOCX &middot; .TXT &middot;
+                    .MD</div>
+                  <input id="guideline-file-input" type="file" accept=".pdf,.docx,.txt,.md" class="hidden" />
+                </div>
+
+                <!-- Indikator Progres Ekstraksi -->
+                <div id="guideline-progress" class="hidden space-y-1">
+                  <div class="flex items-center justify-between text-[11px] text-ink-muted">
+                    <span id="guideline-progress-label">Membaca berkas pedoman...</span>
+                    <span id="guideline-progress-pct" class="font-mono tabular-nums">0%</span>
+                  </div>
+                  <div class="w-full h-1.5 bg-paper-border rounded-[2px] overflow-hidden">
+                    <div id="guideline-progress-bar" class="h-full bg-ink-primary transition-all" style="width: 0%;">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Kotak Error Ramah -->
+                <div id="guideline-error-box"
+                  class="hidden border border-ink-errBorder bg-ink-errBg rounded-[4px] p-2.5 text-[11px] text-ink-err leading-relaxed">
+                </div>
+              </div>
+
+              <!-- Mode Tempel Teks Pedoman -->
+              <div id="guideline-mode-text" class="hidden space-y-2">
+                <textarea id="guideline-text-input" rows="6"
+                  placeholder="Tempel kutipan pasal tata tulis pedoman skripsi/makalah kampus Anda di sini (ukuran kertas, margin, jenis dan ukuran huruf, spasi, penomoran halaman, gaya sitasi)..."
+                  class="w-full p-2.5 text-[12px] leading-relaxed rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none"></textarea>
+                <button id="btn-analyze-guideline-text" type="button"
+                  class="w-full h-8 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer">
+                  Analisis Aturan Pedoman
+                </button>
+              </div>
+
+              <!-- 3 Contoh Pedoman Kampus Siap Uji 1-Klik -->
+              <div class="pt-1 space-y-1.5">
+                <div class="text-[11px] font-medium text-ink-muted">Uji Cepat Contoh Pedoman Kampus:</div>
+                <div class="space-y-1">
+                  <button type="button" data-sample-guideline="ui_ugm"
+                    class="sample-guideline-btn w-full text-left px-2.5 py-1.5 text-[11px] rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong transition cursor-pointer">
+                    <div class="font-semibold text-ink">1. Pedoman Skripsi Standar (UI/UGM)</div>
+                    <div class="font-mono text-[10px] text-ink-muted">A4 &middot; 4-4-3-3 &middot; TNR 12pt &middot;
+                      Spasi 1.5 &middot; APA</div>
+                  </button>
+                  <button type="button" data-sample-guideline="f4_teknik"
+                    class="sample-guideline-btn w-full text-left px-2.5 py-1.5 text-[11px] rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong transition cursor-pointer">
+                    <div class="font-semibold text-ink">2. Pedoman Makalah Fakultas Teknik</div>
+                    <div class="font-mono text-[10px] text-ink-muted">F4 &middot; 4-3-3-3 &middot; Arial 11pt &middot;
+                      Spasi 1.5 &middot; IEEE</div>
+                  </button>
+                  <button type="button" data-sample-guideline="b5_ilmiah"
+                    class="sample-guideline-btn w-full text-left px-2.5 py-1.5 text-[11px] rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong transition cursor-pointer">
+                    <div class="font-semibold text-ink">3. Pedoman Monograf / Karya Ilmiah B5</div>
+                    <div class="font-mono text-[10px] text-ink-muted">B5 &middot; 3-3-2.5-2.5 &middot; Cambria 11pt
+                      &middot; Spasi 1.15</div>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Profil Pedoman Tersimpan di Database SQLite -->
+              <div id="saved-guidelines-db-section" class="hidden pt-2 border-t border-paper-border/60 space-y-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-medium text-ink-muted">Tersimpan di Database (SQLite)</span>
+                  <span id="saved-guidelines-db-count" class="font-mono text-[10px] text-ink-subtle tabular-nums">0</span>
+                </div>
+                <div id="saved-guidelines-db-list" class="space-y-1"></div>
+              </div>
+            </section>
+
+            <!-- Panel Konfirmasi Interaktif Hasil Ekstraksi -->
+            <section id="guideline-results-section" class="hidden p-3.5 bg-white space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <div>
+                  <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Aturan Terdeteksi</div>
+                  <div id="guideline-source-label" class="text-[12px] font-semibold text-ink truncate"></div>
+                </div>
+                <span id="guideline-detected-count"
+                  class="font-mono text-[11px] font-semibold tabular-nums px-1.5 py-0.5 rounded-[4px] bg-paper-bg border border-paper-border text-ink">0</span>
+              </div>
+
+              <div id="guideline-rules-list" class="space-y-2 max-h-[320px] overflow-y-auto ed-scroll pr-0.5">
+                <!-- Dirender dinamis -->
+              </div>
+
+              <div class="flex items-center gap-1.5 pt-1">
+                <button id="btn-apply-selected-rules" type="button"
+                  class="flex-1 h-8 px-3 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer">
+                  Terapkan Aturan Terpilih
+                </button>
+                <button id="btn-dismiss-results" type="button"
+                  class="h-8 px-2.5 text-[12px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong text-ink-muted cursor-pointer">
+                  Tutup
+                </button>
+              </div>
+            </section>
+          </div>
+
+          <!-- --------------------------------------------------------------- -->
+          <!-- TAB 3: SITASI OTOMATIS (APA 7TH & IEEE)                         -->
+          <!-- --------------------------------------------------------------- -->
+          <div id="sidebar-tab-citation" class="sidebar-panel hidden divide-y divide-paper-border">
+
+            <!-- Gaya Sitasi Global -->
+            <section class="p-3.5 bg-white space-y-2">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Gaya Sitasi Global</div>
+              <div class="grid grid-cols-2 border border-paper-border rounded-[4px] overflow-hidden bg-paper-bg">
+                <button type="button" data-cit-style="apa"
+                  class="cit-style-btn h-8 text-[12px] font-medium transition cursor-pointer">
+                  APA 7th Ed.
+                </button>
+                <button type="button" data-cit-style="ieee"
+                  class="cit-style-btn h-8 text-[12px] font-medium border-l border-paper-border transition cursor-pointer">
+                  IEEE Style
+                </button>
+              </div>
+              <p class="text-[11px] text-ink-muted leading-snug">
+                Sinkronisasi otomatis kutipan in-text (<span class="font-mono">(Penulis, Tahun)</span> &harr;
+                <span class="font-mono">[1]</span>) dan format Daftar Pustaka.
+              </p>
+            </section>
+
+            <!-- Audit Konsistensi Sitasi ↔ Daftar Pustaka -->
+            <section id="citation-audit-section" class="p-3.5 bg-white space-y-2">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Audit Konsistensi Sitasi</span>
+                <span id="cit-audit-badge"
+                  class="font-mono text-[10.5px] font-medium tabular-nums px-1.5 py-0.5 rounded-[4px] border border-paper-border bg-paper-bg text-ink-muted">0/0</span>
+              </div>
+              <div id="cit-audit-summary" class="text-[11px] text-ink-muted leading-snug">
+                Memeriksa kesesuaian kutipan naskah dengan Daftar Pustaka...
+              </div>
+              <div id="cit-audit-issues" class="hidden space-y-1.5 pt-0.5"></div>
+            </section>
+
+            <!-- Form Tambah Referensi -->
+            <form id="citation-form" class="p-3.5 space-y-2.5">
+              <div class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Tambah Referensi Baru</div>
+
+              <div>
+                <label for="cit-type" class="block text-[11px] font-medium text-ink-muted mb-1">Jenis Sumber</label>
+                <select id="cit-type"
+                  class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none">
+                  <option value="book">Buku</option>
+                  <option value="journal">Artikel Jurnal</option>
+                  <option value="website">Website / Daring</option>
+                </select>
+              </div>
+
+              <div>
+                <label for="cit-authors" class="block text-[11px] font-medium text-ink-muted mb-0.5">Nama Penulis (pisah
+                  dengan titik koma)</label>
+                <input id="cit-authors" type="text" required placeholder="Budi Santoso; Siti Rahma"
+                  class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+              </div>
+
+              <div class="grid grid-cols-3 gap-1.5">
+                <div>
+                  <label for="cit-year" class="block text-[11px] font-medium text-ink-muted mb-0.5">Tahun</label>
+                  <input id="cit-year" type="text" required placeholder="2024"
+                    class="w-full h-8 px-2 font-mono text-[12px] tabular-nums rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+                <div class="col-span-2">
+                  <label for="cit-title" class="block text-[11px] font-medium text-ink-muted mb-0.5">Judul Karya</label>
+                  <input id="cit-title" type="text" required placeholder="Judul buku, artikel, atau laman"
+                    class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+              </div>
+
+              <!-- Bidang Buku -->
+              <div id="cit-fields-book" class="grid grid-cols-2 gap-1.5">
+                <div>
+                  <label for="cit-publisher"
+                    class="block text-[11px] font-medium text-ink-muted mb-0.5">Penerbit</label>
+                  <input id="cit-publisher" type="text" placeholder="Pustaka Akademika"
+                    class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+                <div>
+                  <label for="cit-city" class="block text-[11px] font-medium text-ink-muted mb-0.5">Kota</label>
+                  <input id="cit-city" type="text" placeholder="Jakarta"
+                    class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+              </div>
+
+              <!-- Bidang Jurnal -->
+              <div id="cit-fields-journal" class="hidden space-y-2">
+                <div>
+                  <label for="cit-journal" class="block text-[11px] font-medium text-ink-muted mb-0.5">Nama
+                    Jurnal</label>
+                  <input id="cit-journal" type="text" placeholder="Jurnal Teknologi Pendidikan"
+                    class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+                <div class="grid grid-cols-3 gap-1.5">
+                  <div>
+                    <label for="cit-vol" class="block text-[10px] font-medium text-ink-muted mb-0.5">Volume</label>
+                    <input id="cit-vol" type="text" placeholder="12"
+                      class="w-full h-8 px-2 font-mono text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="cit-issue" class="block text-[10px] font-medium text-ink-muted mb-0.5">Nomor</label>
+                    <input id="cit-issue" type="text" placeholder="2"
+                      class="w-full h-8 px-2 font-mono text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                  <div>
+                    <label for="cit-pages" class="block text-[10px] font-medium text-ink-muted mb-0.5">Halaman</label>
+                    <input id="cit-pages" type="text" placeholder="45-58"
+                      class="w-full h-8 px-2 font-mono text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bidang Website -->
+              <div id="cit-fields-website" class="hidden space-y-2">
+                <div>
+                  <label for="cit-site" class="block text-[11px] font-medium text-ink-muted mb-0.5">Situs /
+                    Lembaga</label>
+                  <input id="cit-site" type="text" placeholder="Kemendikbudristek"
+                    class="w-full h-8 px-2 text-[12px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+                <div>
+                  <label for="cit-url" class="block text-[11px] font-medium text-ink-muted mb-0.5">URL Lengkap</label>
+                  <input id="cit-url" type="url" placeholder="https://..."
+                    class="w-full h-8 px-2 font-mono text-[11px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+                </div>
+              </div>
+
+              <div id="cit-live-preview"
+                class="bg-white border border-paper-border rounded-[4px] p-2 text-[11px] text-ink-muted leading-relaxed">
+                Pratinjau sitasi tampil di sini setelah mengisi bidang di atas.
+              </div>
+
+              <button type="submit"
+                class="w-full h-8 px-3 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer">
+                Simpan &amp; Sisipkan ke Kursor
+              </button>
+            </form>
+
+            <!-- Daftar Referensi Tersimpan -->
+            <section class="p-3.5 bg-white space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Referensi
+                  Tersimpan</span>
+                <span id="managed-cit-count" class="font-mono text-[11px] text-ink-muted tabular-nums">0</span>
+              </div>
+              <div id="managed-citations-list" class="space-y-2"></div>
+            </section>
+          </div>
+
+          <!-- --------------------------------------------------------------- -->
+          <!-- TAB 4: STRUKTUR & NAVIGASI DOKUMEN (OUTLINE)                    -->
+          <!-- --------------------------------------------------------------- -->
+          <div id="sidebar-tab-structure" class="sidebar-panel hidden divide-y divide-paper-border/60">
+            <!-- Kartu Audit Kelayakan Dokumen -->
+            <section id="readiness-audit-card" class="p-3.5 space-y-2.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Kelayakan Makalah</span>
+                <span id="readiness-score-badge"
+                  class="font-mono text-[10.5px] font-medium tabular-nums px-1.5 py-0.5 rounded-[4px] border border-paper-border bg-paper-bg text-ink-muted">-</span>
+              </div>
+              <div id="readiness-checks-list" class="space-y-1.5 text-[11px]"></div>
+              <button id="btn-download-readiness-report" type="button"
+                class="w-full h-7 text-[11px] font-medium rounded-[4px] bg-paper-bg hover:bg-paper-desk/70 text-ink border border-paper-border transition cursor-pointer">
+                Unduh Laporan Audit (.txt)
+              </button>
+            </section>
+
+            <!-- Garis Besar Dokumen -->
+            <section class="p-3.5 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Garis Besar Dokumen</span>
+                <span id="outline-total-pages" class="font-mono text-[11px] text-ink-muted tabular-nums">0 hal</span>
+              </div>
+              <p class="text-[11px] text-ink-muted leading-snug">
+                Klik item di bawah untuk melompat langsung ke bagian terkait pada editor dan pratinjau kertas.
+              </p>
+              <div id="document-outline-list" class="space-y-1">
+                <!-- Dirender dinamis oleh JS -->
+              </div>
+            </section>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- =================================================================== -->
+      <!-- PANEL 2 (TENGAH): EDITOR NASKAH & TOOLBAR PERAPIHAN MINIMALIS       -->
+      <!-- =================================================================== -->
+      <section id="pane-editor"
+        class="flex-1 min-w-0 bg-white border-r border-paper-border/80 flex flex-col h-full overflow-hidden">
+
+        <!-- Baris 1 Toolbar: Sub-tab Naskah/Pustaka + Perapihan Cepat -->
+        <div
+          class="bg-white border-b border-paper-border/70 px-4 flex flex-wrap items-center justify-between gap-2 shrink-0">
+          <!-- Tab Isi Makalah vs Daftar Pustaka -->
+          <div class="flex items-center gap-4">
+            <button type="button" data-editor-tab="body"
+              class="ed-subtab-btn h-10 text-[12px] font-medium border-b-2 transition cursor-pointer">
+              Isi Makalah
+            </button>
+            <button type="button" data-editor-tab="bib"
+              class="ed-subtab-btn h-10 text-[12px] font-medium border-b-2 transition cursor-pointer inline-flex items-center gap-1.5">
+              <span>Daftar Pustaka</span>
+              <span id="bib-tab-badge"
+                class="font-mono text-[9.5px] px-1 py-0.5 rounded-[3px] bg-paper-bg text-ink-muted">APA</span>
+            </button>
+          </div>
+
+          <!-- Grup Perapihan Utama -->
+          <div class="flex items-center flex-wrap gap-1 py-1.5">
+            <button id="btn-clean-all" type="button" title="Bersihkan simbol AI, baris PDF terpotong, dan spasi ganda"
+              class="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11.5px] font-medium rounded-[5px] bg-ink-primary hover:bg-ink-primaryHover text-white transition cursor-pointer">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+              <span>Rapikan</span>
+            </button>
+
+            <button id="btn-lint-kbbi" type="button" title="Perbaiki kata tidak baku sesuai KBBI"
+              class="h-7 px-2 text-[11px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg transition cursor-pointer">
+              Kata Baku
+            </button>
+            <button id="btn-lint-foreign" type="button" title="Miringkan istilah asing akademik secara otomatis"
+              class="h-7 px-2 text-[11px] font-medium rounded-[5px] text-ink-primary hover:bg-paper-bg transition cursor-pointer">
+              Italic Asing
+            </button>
+            <button id="btn-undo-clean" type="button" title="Batalkan aksi perapihan otomatis terakhir"
+              class="hidden h-7 px-2 text-[11px] font-medium rounded-[5px] text-ink-muted hover:text-ink hover:bg-paper-bg border border-paper-border transition cursor-pointer">
+              Urungkan
+            </button>
+            <button id="btn-editor-help" type="button" title="Panduan singkat tanda format di editor"
+              class="inline-flex items-center justify-center w-6 h-6 text-[11px] font-mono font-semibold rounded-full text-ink-subtle hover:text-ink hover:bg-paper-bg transition cursor-pointer">
+              ?
+            </button>
+          </div>
+        </div>
+
+        <!-- Baris 2 Toolbar: Strip Sisip Elemen & Pembersih Khusus -->
+        <div
+          class="bg-paper-bg/45 border-b border-paper-border/60 px-4 py-1.5 flex items-center justify-between flex-wrap gap-x-3 gap-y-1 shrink-0">
+          <div class="flex items-center flex-wrap gap-1">
+            <span class="text-[10.5px] font-medium text-ink-subtle mr-0.5 select-none">Sisipkan:</span>
+            <button id="btn-ins-bab" type="button" title="Sisipkan judul BAB baru"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              + BAB
+            </button>
+            <button id="btn-ins-subbab" type="button" title="Sisipkan sub-bab baru"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              + Sub-bab
+            </button>
+            <button id="btn-ins-table" type="button" title="Sisipkan Tabel Bernomor Otomatis"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              + Tabel
+            </button>
+            <button id="btn-ins-figure" type="button" title="Sisipkan Gambar Bernomor Otomatis"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              + Gambar
+            </button>
+            <button id="btn-ins-citation" type="button" title="Sisipkan sitasi dari tab Sitasi"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-primary hover:bg-white transition cursor-pointer">
+              + Sitasi
+            </button>
+          </div>
+
+          <div class="flex items-center flex-wrap gap-1">
+            <span class="text-[10.5px] font-medium text-ink-subtle mr-0.5 select-none">Bersihkan:</span>
+            <button id="btn-clean-md" type="button" title="Hapus tanda bintang (**), pagar (#), dan simbol hasil salin AI"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              Simbol AI
+            </button>
+            <button id="btn-fix-pdf" type="button" title="Sambungkan baris terpotong hasil salin PDF"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              Baris PDF
+            </button>
+            <button id="btn-clean-space" type="button" title="Rapikan spasi ganda dan tanda baca"
+              class="h-6 px-2 text-[11px] font-medium rounded-[4px] text-ink-muted hover:text-ink hover:bg-white transition cursor-pointer">
+              Spasi
+            </button>
+          </div>
+        </div>
+
+        <!-- Tip Singkat Tanda Format Editor (Dapat ditutup 1x, buka lagi lewat tombol ?) -->
+        <div id="editor-help-strip"
+          class="hidden bg-paper-bg/70 border-b border-paper-border/60 px-4 py-1.5 text-[11px] text-ink-muted shrink-0">
+          <div class="flex items-center justify-between gap-2">
+            <p class="leading-snug m-0">
+              Tanda <code class="font-mono text-[10.5px] text-ink">&lt;i&gt;miring&lt;/i&gt;</code>,
+              <code class="font-mono text-[10.5px] text-ink">[TABEL]</code>,
+              <code class="font-mono text-[10.5px] text-ink">[GAMBAR]</code>, dan
+              <code class="font-mono text-[10.5px] text-ink">[@ref]</code> otomatis berubah menjadi format Word asli di pratinjau &amp; file unduhan.
+            </p>
+            <button id="btn-close-editor-help" type="button" title="Tutup catatan ini"
+              class="text-ink-subtle hover:text-ink px-1 text-[13px] leading-none cursor-pointer shrink-0">&times;</button>
+          </div>
+        </div>
+
+        <!-- Area Konten Editor -->
+        <div class="flex-1 flex flex-col overflow-hidden bg-white">
+          <!-- Panel Isi Makalah -->
+          <div id="editor-panel-body" class="flex-1 flex flex-col overflow-hidden">
+            <textarea id="content-editor"
+              placeholder="Tempel atau tulis naskah makalah di sini. Struktur BAB, sub-bab, daftar poin, sitasi [@ref], [TABEL], dan [GAMBAR] terdeteksi otomatis."
+              class="flex-1 w-full px-5 py-5 sm:px-7 sm:py-6 text-[13.5px] leading-[1.75] text-ink bg-white outline-none resize-none ed-scroll font-sans"></textarea>
+          </div>
+
+          <!-- Panel Daftar Pustaka -->
+          <div id="editor-panel-bib" class="hidden flex-1 flex flex-col overflow-y-auto ed-scroll p-4 space-y-3">
+            <div class="flex items-center justify-between gap-2 pb-2 border-b border-paper-border">
+              <div>
+                <div class="text-[12px] font-semibold text-ink">
+                  Daftar Pustaka (<span id="bib-style-label">APA 7th Edition</span>)
+                </div>
+                <div class="text-[11px] text-ink-muted">
+                  Referensi dari tab Sitasi tersinkronisasi otomatis. Tambahkan entri manual di bawah bila diperlukan.
+                </div>
+              </div>
+              <button id="btn-sort-manual-bib" type="button"
+                class="h-7 px-2.5 text-[11px] font-medium rounded-[4px] bg-paper-bg hover:bg-paper-desk border border-paper-border text-ink cursor-pointer shrink-0">
+                Urutkan A&ndash;Z
+              </button>
+            </div>
+
+            <div class="border border-paper-border rounded-[4px] bg-paper-bg p-3 space-y-1.5">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-ink-muted">Entri Otomatis dari Tab
+                Sitasi</div>
+              <div id="bib-auto-summary" class="text-[12px] text-ink space-y-1.5 max-h-44 overflow-y-auto ed-scroll">
+              </div>
+            </div>
+
+            <div class="flex-1 flex flex-col min-h-[180px]">
+              <label for="bib-manual-editor" class="text-[11px] font-medium text-ink-muted mb-1">Referensi Manual
+                Tambahan (1 entri per baris)</label>
+              <textarea id="bib-manual-editor"
+                placeholder="Sugiyono. (2022). Metode Penelitian Kuantitatif, Kualitatif, dan R&D. Bandung: Alfabeta."
+                class="flex-1 w-full p-3 text-[12px] leading-relaxed rounded-[4px] border border-paper-border focus:border-ink-primary outline-none resize-none ed-scroll"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer Statistik Real-Time Editor -->
+        <footer
+          class="h-8 bg-white border-t border-paper-border/70 px-4 flex items-center justify-between gap-2 text-[11px] text-ink-subtle shrink-0">
+          <div class="flex items-center gap-3 font-mono tabular-nums overflow-x-auto">
+            <span><strong id="stat-words" class="text-ink-muted font-medium">0</strong> kata</span>
+            <span><strong id="stat-paragraphs" class="text-ink-muted font-medium">0</strong> paragraf</span>
+            <span><strong id="stat-pages" class="text-ink-muted font-medium">0</strong> hal</span>
+            <span class="hidden sm:inline"><strong id="stat-tables" class="text-ink-muted font-medium">0</strong> tabel</span>
+            <span class="hidden sm:inline"><strong id="stat-figures" class="text-ink-muted font-medium">0</strong>
+              gambar</span>
+            <span class="hidden md:inline"><strong id="stat-citations" class="text-ink-muted font-medium">0</strong>
+              sitasi</span>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span id="wb-engine-indicator" title="Status mesin pemrosesan DOCX"
+              class="hidden sm:inline-flex items-center gap-1.5 font-mono text-[10px] text-ink-subtle whitespace-nowrap">
+              <span id="wb-engine-dot" class="w-1.5 h-1.5 rounded-full bg-paper-borderStrong"></span>
+              <span id="wb-engine-label">Browser</span>
+            </span>
+            <div id="autosave-status" class="font-mono text-[10px] text-ink-subtle whitespace-nowrap">Tersimpan otomatis
+            </div>
+          </div>
+        </footer>
+      </section>
+
+      <!-- =================================================================== -->
+      <!-- PANEL 3 (KANAN): PRATINJAU KERTAS REAL-TIME (40% - 45%)             -->
+      <!-- =================================================================== -->
+      <section id="pane-preview"
+        class="hidden lg:flex w-full min-w-0 lg:w-[40%] xl:w-[42%] 2xl:w-[45%] flex-col h-full overflow-hidden desk-workspace shrink-0">
+
+        <!-- Bar Kontrol Pratinjau -->
+        <div class="h-10 bg-white border-b border-paper-border/70 px-3 sm:px-4 flex items-center justify-between gap-2 shrink-0 min-w-0">
+          <!-- Indikator Kertas, Margin, & Penomoran Aktif -->
+          <div id="preview-spec-indicator" class="font-mono text-[10.5px] sm:text-[11px] text-ink-muted tabular-nums truncate min-w-0 flex-1">
+            A4 &middot; 4/4/3/3 cm &middot; Skripsi
+          </div>
+
+          <!-- Kontrol Zoom & Garis Margin -->
+          <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <button id="btn-quick-margin-guide" type="button" title="Tampilkan atau sembunyikan garis bantu margin"
+              class="h-6 px-2 text-[10.5px] sm:text-[11px] font-medium rounded-[4px] border transition cursor-pointer">
+              Margin
+            </button>
+
+            <div
+              class="inline-flex items-center border border-paper-border rounded-[4px] bg-paper-bg overflow-hidden font-mono text-[10.5px] sm:text-[11px] tabular-nums">
+              <button type="button" data-zoom="50"
+                class="zoom-preset-btn h-6 px-1.5 transition cursor-pointer">50%</button>
+              <button type="button" data-zoom="75"
+                class="zoom-preset-btn h-6 px-1.5 border-l border-paper-border transition cursor-pointer">75%</button>
+              <button type="button" data-zoom="100"
+                class="zoom-preset-btn h-6 px-1.5 border-l border-paper-border transition cursor-pointer hidden sm:inline-block">100%</button>
+              <button type="button" data-zoom="125"
+                class="zoom-preset-btn h-6 px-1.5 border-l border-paper-border transition cursor-pointer hidden md:inline-block">125%</button>
+              <button id="btn-zoom-fit" type="button"
+                class="h-6 px-2 border-l border-paper-border text-ink-primary hover:bg-white transition cursor-pointer font-sans font-medium">Pas</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Area Gulir Lembaran Kertas -->
+        <div id="preview-viewport" class="flex-1 overflow-auto ed-scroll p-3 sm:p-5">
+            <div id="paper-stack" class="w-fit mx-auto flex flex-col items-center gap-8 pt-4 pb-16">
+              <!-- Lembaran .paper-page dirender dinamis -->
+            </div>
+          </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL PEMBUAT TABEL BERNOMOR                                            -->
+  <!-- ======================================================================= -->
+  <div id="table-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/40 p-4">
+    <div
+      class="bg-white rounded-[6px] border border-paper-borderStrong max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-lg">
+      <div class="px-4 py-3 border-b border-paper-border flex items-center justify-between bg-paper-bg">
+        <div>
+          <h3 class="text-[13px] font-semibold text-ink">Sisipkan Tabel Bernomor Otomatis</h3>
+          <p class="text-[11px] text-ink-muted">Penomoran mengikuti posisi BAB aktif dan langsung tercatat di Daftar
+            Tabel.</p>
+        </div>
+        <button id="table-modal-close" type="button" aria-label="Tutup dialog"
+          class="w-7 h-7 rounded-[4px] hover:bg-paper-desk flex items-center justify-center text-ink-muted cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto ed-scroll space-y-3.5">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="tm-title" class="block text-[11px] font-medium text-ink-muted mb-1">Judul Tabel</label>
+            <input id="tm-title" type="text" placeholder="Perbandingan Metode Pembelajaran AI"
+              class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <div>
+            <label for="tm-source" class="block text-[11px] font-medium text-ink-muted mb-1">Sumber Tabel
+              (Opsional)</label>
+            <input id="tm-source" type="text" placeholder="Data Olahan Penulis (2026)"
+              class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+        </div>
+
+        <div
+          class="flex items-center justify-between flex-wrap gap-2 bg-paper-bg px-3 py-2 rounded-[4px] border border-paper-border">
+          <span class="font-mono text-[11px] text-ink tabular-nums">Grid: <strong id="tm-dims">3 &times;
+              3</strong></span>
+          <div class="flex items-center gap-1.5">
+            <button id="tm-add-row" type="button"
+              class="h-7 px-2 text-[11px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong cursor-pointer">+
+              Baris</button>
+            <button id="tm-del-row" type="button"
+              class="h-7 px-2 text-[11px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-ink-errBorder hover:text-ink-err cursor-pointer">-
+              Baris</button>
+            <button id="tm-add-col" type="button"
+              class="h-7 px-2 text-[11px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong cursor-pointer">+
+              Kolom</button>
+            <button id="tm-del-col" type="button"
+              class="h-7 px-2 text-[11px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-ink-errBorder hover:text-ink-err cursor-pointer">-
+              Kolom</button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto border border-paper-border rounded-[4px]">
+          <table id="tm-grid" class="w-full border-collapse text-[12px]"></table>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-t border-paper-border bg-paper-bg flex items-center justify-end gap-2">
+        <button id="table-modal-cancel" type="button"
+          class="h-8 px-3 text-[12px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong text-ink cursor-pointer">Batal</button>
+        <button id="table-modal-insert" type="button"
+          class="h-8 px-3.5 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer">Sisipkan
+          Tabel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL PEMBUAT GAMBAR BERNOMOR                                           -->
+  <!-- ======================================================================= -->
+  <div id="figure-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/40 p-4">
+    <div
+      class="bg-white rounded-[6px] border border-paper-borderStrong max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-lg">
+      <div class="px-4 py-3 border-b border-paper-border flex items-center justify-between bg-paper-bg">
+        <div>
+          <h3 class="text-[13px] font-semibold text-ink">Sisipkan Gambar Bernomor Otomatis</h3>
+          <p class="text-[11px] text-ink-muted">Penomoran mengikuti posisi BAB aktif dan langsung tercatat di Daftar
+            Gambar.</p>
+        </div>
+        <button id="figure-modal-close" type="button" aria-label="Tutup dialog"
+          class="w-7 h-7 rounded-[4px] hover:bg-paper-desk flex items-center justify-center text-ink-muted cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="p-4 overflow-y-auto ed-scroll space-y-3">
+        <div>
+          <label for="fm-title" class="block text-[11px] font-medium text-ink-muted mb-1">Judul / Keterangan
+            Gambar</label>
+          <input id="fm-title" type="text" placeholder="Arsitektur Sistem Pembelajaran Berbasis AI"
+            class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+        </div>
+
+        <div>
+          <label for="fm-source" class="block text-[11px] font-medium text-ink-muted mb-1">Sumber Gambar
+            (Opsional)</label>
+          <input id="fm-source" type="text" placeholder="Dokumentasi Penulis (2026)"
+            class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+        </div>
+
+        <div class="bg-paper-bg border border-paper-border rounded-[4px] p-3 space-y-2.5">
+          <div class="flex flex-wrap items-center gap-2">
+            <label
+              class="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              <span>Unggah Gambar Lokal</span>
+              <input id="fm-file-input" type="file" accept="image/*" class="hidden" />
+            </label>
+            <span class="text-[11px] text-ink-muted">atau masukkan URL gambar:</span>
+          </div>
+
+          <input id="fm-url-input" type="url" placeholder="https://contoh.com/diagram.png"
+            class="w-full h-8 px-2.5 font-mono text-[11px] rounded-[4px] bg-white border border-paper-border focus:border-ink-primary outline-none" />
+
+          <div id="fm-preview-box"
+            class="bg-white border border-dashed border-paper-borderStrong rounded-[4px] p-3 min-h-[100px] flex items-center justify-center text-[11px] text-ink-muted">
+            Pratinjau gambar tampil di sini
+          </div>
+        </div>
+
+        <div>
+          <div class="text-[11px] font-medium text-ink-muted mb-1">Lebar Gambar pada Kertas</div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <label
+              class="flex items-center justify-center h-8 rounded-[4px] border border-paper-border bg-paper-bg cursor-pointer has-[:checked]:border-ink-primary has-[:checked]:bg-white font-mono text-[12px]">
+              <input type="radio" name="fmWidth" value="50" class="mr-1.5" /> 50%
+            </label>
+            <label
+              class="flex items-center justify-center h-8 rounded-[4px] border border-paper-border bg-paper-bg cursor-pointer has-[:checked]:border-ink-primary has-[:checked]:bg-white font-mono text-[12px]">
+              <input type="radio" name="fmWidth" value="75" checked class="mr-1.5" /> 75%
+            </label>
+            <label
+              class="flex items-center justify-center h-8 rounded-[4px] border border-paper-border bg-paper-bg cursor-pointer has-[:checked]:border-ink-primary has-[:checked]:bg-white font-mono text-[12px]">
+              <input type="radio" name="fmWidth" value="100" class="mr-1.5" /> 100%
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-4 py-3 border-t border-paper-border bg-paper-bg flex items-center justify-end gap-2">
+        <button id="figure-modal-cancel" type="button"
+          class="h-8 px-3 text-[12px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong text-ink cursor-pointer">Batal</button>
+        <button id="figure-modal-insert" type="button"
+          class="h-8 px-3.5 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer">Sisipkan
+          Gambar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL AKUN & SINKRONISASI CLOUD SUPABASE (AUTH + RLS)                   -->
+  <!-- ======================================================================= -->
+  <div id="cloud-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/40 p-4">
+    <div class="bg-white rounded-[6px] border border-paper-borderStrong max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-lg">
+      <div class="px-4 py-3 border-b border-paper-border flex items-center justify-between bg-paper-bg">
+        <div>
+          <h3 class="text-[13px] font-semibold text-ink">Akun &amp; Sinkronisasi Cloud (Supabase RLS)</h3>
+          <p class="text-[11px] text-ink-muted">Simpan &amp; lanjutkan draft makalah lintas komputer dan HP Android secara aman.</p>
+        </div>
+        <button id="cloud-modal-close" type="button" aria-label="Tutup dialog"
+          class="w-7 h-7 inline-flex items-center justify-center rounded-[4px] text-ink-muted hover:text-ink hover:bg-white cursor-pointer">&times;</button>
+      </div>
+
+      <div class="p-4 overflow-y-auto ed-scroll space-y-4">
+        <!-- Panel 1: Konfigurasi Supabase (tampil bila belum diisi atau pengguna klik Ubah) -->
+        <div id="cloud-view-config" class="space-y-3">
+          <div class="text-[11.5px] text-ink-muted leading-relaxed bg-paper-bg border border-paper-border rounded-[5px] p-3">
+            Masukkan <strong>Project URL</strong> dan <strong>Public Anon Key</strong> Supabase (jalankan dulu
+            <code class="font-mono text-[10.5px] text-ink">supabase/schema_rls.sql</code>). Demi keamanan OWASP, jangan pernah memasukkan <em>service_role key</em> di sisi klien.
+          </div>
+          <div>
+            <label for="cloud-cfg-url" class="block text-[11px] font-medium text-ink-muted mb-1">Supabase Project URL</label>
+            <input id="cloud-cfg-url" type="url" placeholder="https://xxxxxxxxxxxx.supabase.co"
+              class="w-full h-8 px-2.5 text-[12px] font-mono rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <div>
+            <label for="cloud-cfg-key" class="block text-[11px] font-medium text-ink-muted mb-1">Supabase Public Anon Key</label>
+            <input id="cloud-cfg-key" type="password" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+              class="w-full h-8 px-2.5 text-[12px] font-mono rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <div>
+            <label for="cloud-cfg-api" class="block text-[11px] font-medium text-ink-muted mb-1">URL Backend FastAPI HTTPS (Opsional untuk Android App)</label>
+            <input id="cloud-cfg-api" type="url" placeholder="https://makarapi-api.onrender.com"
+              class="w-full h-8 px-2.5 text-[12px] font-mono rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <button id="btn-cloud-save-cfg" type="button"
+            class="w-full h-8 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer">
+            Simpan Konfigurasi
+          </button>
+        </div>
+
+        <!-- Panel 2: Autentikasi Masuk / Daftar -->
+        <div id="cloud-view-auth" class="hidden space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="inline-flex border border-paper-border rounded-[4px] bg-paper-bg p-0.5 text-[11.5px]">
+              <button id="cloud-tab-login" type="button" class="px-3 py-1 rounded-[3px] bg-ink-primary text-white font-medium cursor-pointer">Masuk</button>
+              <button id="cloud-tab-signup" type="button" class="px-3 py-1 rounded-[3px] text-ink-muted font-medium cursor-pointer">Daftar Baru</button>
+            </div>
+            <button id="btn-cloud-edit-cfg" type="button" class="text-[11px] text-ink-muted hover:text-ink underline cursor-pointer">Ubah Server</button>
+          </div>
+          <div>
+            <label for="cloud-auth-email" class="block text-[11px] font-medium text-ink-muted mb-1">Email</label>
+            <input id="cloud-auth-email" type="email" placeholder="mahasiswa@kampus.ac.id"
+              class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <div>
+            <label for="cloud-auth-pass" class="block text-[11px] font-medium text-ink-muted mb-1">Kata Sandi (min. 8 karakter)</label>
+            <input id="cloud-auth-pass" type="password" placeholder="••••••••"
+              class="w-full h-8 px-2.5 text-[12px] rounded-[4px] border border-paper-border focus:border-ink-primary outline-none" />
+          </div>
+          <button id="btn-cloud-auth-submit" type="button"
+            class="w-full h-8 text-[12px] font-medium rounded-[4px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer">
+            Masuk ke Cloud
+          </button>
+        </div>
+
+        <!-- Panel 3: Dashboard Sinkronisasi Draft (Sudah Masuk) -->
+        <div id="cloud-view-signedin" class="hidden space-y-3">
+          <div class="flex items-center justify-between gap-2 bg-ink-okBg border border-ink-okBorder rounded-[5px] px-3 py-2">
+            <div class="min-w-0">
+              <div class="text-[10.5px] font-mono text-ink-ok">RLS Aktif &middot; Tersambung</div>
+              <div id="cloud-user-email" class="text-[12px] font-medium text-ink truncate"></div>
+            </div>
+            <button id="btn-cloud-signout" type="button"
+              class="h-7 px-2.5 text-[11px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-ink-errBorder text-ink-muted hover:text-ink-err cursor-pointer shrink-0">
+              Keluar
+            </button>
+          </div>
+
+          <button id="btn-cloud-save-draft" type="button"
+            class="w-full h-9 text-[12px] font-medium rounded-[5px] bg-ink-primary hover:bg-ink-primaryHover text-white cursor-pointer">
+            Simpan Draft Makalah Saat Ini ke Cloud
+          </button>
+
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[10.5px] font-semibold uppercase tracking-wider text-ink-subtle">Draft Tersimpan di Cloud</span>
+              <button id="btn-cloud-refresh" type="button" class="text-[11px] text-ink-primary hover:underline cursor-pointer">Segarkan</button>
+            </div>
+            <div id="cloud-drafts-list" class="space-y-1.5 max-h-56 overflow-y-auto ed-scroll">
+              <div class="text-[11.5px] text-ink-muted italic border border-dashed border-paper-border rounded-[4px] p-3 text-center">
+                Belum ada draft tersimpan di cloud.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- MODAL KONFIRMASI KUSTOM (PENGGANTI window.confirm)                      -->
+  <!-- ======================================================================= -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-ink/40 p-4">
+    <div class="bg-white rounded-[6px] border border-paper-borderStrong max-w-md w-full p-4 space-y-4 shadow-lg">
+      <div class="space-y-1">
+        <h3 id="confirm-title" class="text-[13px] font-semibold text-ink">Konfirmasi</h3>
+        <p id="confirm-message" class="text-[12px] text-ink-muted leading-relaxed"></p>
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button id="confirm-cancel" type="button"
+          class="h-8 px-3 text-[12px] font-medium rounded-[4px] bg-white border border-paper-border hover:border-paper-borderStrong text-ink cursor-pointer">Batal</button>
+        <button id="confirm-ok" type="button"
+          class="h-8 px-3 text-[12px] font-medium rounded-[4px] bg-ink-err hover:opacity-90 text-white cursor-pointer">Ya,
+          Lanjutkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WADAH PENGUKUR PAGINASI, PRINT ROOT, & TOAST -->
+  <div id="measure-container" aria-hidden="true"></div>
+  <div id="print-root" aria-hidden="true"></div>
+  <div id="toast-container"
+    class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] pointer-events-none"></div>
+
+  <!-- PWA Offline Cache, Supabase Cloud Sync (RLS), Client API Hybrid, & Logika Aplikasi -->
+  <script defer src="js/pwa.js"></script>
+  <script defer src="js/supabase-config.js"></script>
+  <script defer src="js/supabase-client.js"></script>
+  <script defer src="js/api-client.js"></script>
+  <script defer src="js/docx-exporter.js"></script>
+  <script defer src="js/app.js"></script>
+</body>
+
+</html>

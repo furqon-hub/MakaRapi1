@@ -1,0 +1,17 @@
+{
+  "name": "makarapi-app",
+  "version": "1.2.0",
+  "description": "MakaRapi — Aplikasi Perapihan & Format Makalah Akademik (PWA + Capacitor Android)",
+  "private": true,
+  "scripts": {
+    "prepare:www": "python scripts/prepare_www.py",
+    "cap:add:android": "npm run prepare:www && npx cap add android",
+    "cap:sync": "npm run prepare:www && npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/cli": "^6.1.2",
+    "@capacitor/core": "^6.1.2"
+  }
+}

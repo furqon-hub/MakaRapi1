@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: makarapi-hybrid-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MAKARAPI_ALLOWED_ORIGINS
+        value: "https://localhost,capacitor://localhost"

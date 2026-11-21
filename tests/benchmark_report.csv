@@ -1,0 +1,6 @@
+scenario,words,bab_detected,table_detected,citation_score,parse_ms,build_ms,out_kb,structure_ok,ooxml_valid
+"Makalah Ringkas (2 BAB, 0 Tabel)",131,2/2,0/0,100%,32.12,202.06,48.5,PASS,PASS
+"Makalah Standar (3 BAB, 1 Tabel, Abstrak)",290,3/3,1/1,100%,45.27,274.41,51.2,PASS,PASS
+"Makalah Menengah (3 BAB, 2 Tabel, Abstrak)",394,3/3,2/2,100%,41.47,283.64,51.2,PASS,PASS
+"Laporan Panjang (4 BAB, 3 Tabel, Abstrak)",631,4/4,3/3,100%,55.75,296.72,53.6,PASS,PASS
+"Skripsi Mini (5 BAB, 4 Tabel, Abstrak)",920,5/5,4/4,100%,88.73,339.42,56.0,PASS,PASS

@@ -1,0 +1,681 @@
+/* ==========================================================================
+   MakaRapi — Editorial Workbench Stylesheet
+   Dipisahkan dari dokumen HTML utama agar terstruktur dan mudah dirawat.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Variabel Global & Reset Dasar
+   -------------------------------------------------------------------------- */
+:root {
+  --cm-to-px: 37.7952755906px;
+
+  /* Palet Kertas & Meja Kerja */
+  --paper-bg: #F7F6F2;
+  --paper-desk: #EAE7E1;
+  --paper-surface: #FFFFFF;
+  --paper-border: #E2DFD9;
+  --paper-border-strong: #D2CEC6;
+  --paper-table-head: #F4F3EF;
+
+  /* Palet Tinta & Aksen */
+  --ink-default: #18181B;
+  --ink-secondary: #27272A;
+  --ink-primary: #1D3557;
+  --ink-scroll-thumb: #D2CEC6;
+  --ink-scroll-hover: #A8A29E;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  background-color: var(--paper-bg);
+  color: var(--ink-default);
+  font-size: 13px;
+  line-height: 1.45;
+  overflow: hidden;
+}
+
+/* Halaman Menu Utama (Unggah Dokumen) dapat digulir vertikal */
+body.page-home {
+  overflow-x: hidden;
+  overflow-y: auto;
+  min-height: 100vh;
+}
+
+.dropzone-active {
+  border-color: var(--ink-primary) !important;
+  background-color: #EDF2F7 !important;
+}
+
+/* --------------------------------------------------------------------------
+   1b. Identitas Visual Editorial Print Studio (Ruler, Crop Marks, Specimen)
+   -------------------------------------------------------------------------- */
+.print-ruler-bar {
+  position: relative;
+  height: 22px;
+  background-color: #F2F0EA;
+  border-bottom: 1px solid var(--paper-border);
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(29, 53, 87, 0.28) 0px,
+      rgba(29, 53, 87, 0.28) 1px,
+      transparent 1px,
+      transparent 38px
+    ),
+    repeating-linear-gradient(
+      to right,
+      rgba(120, 113, 108, 0.22) 0px,
+      rgba(120, 113, 108, 0.22) 1px,
+      transparent 1px,
+      transparent 9.5px
+    );
+  background-size: 100% 9px, 100% 5px;
+  background-position: left bottom, left bottom;
+  background-repeat: no-repeat;
+}
+
+.crop-frame {
+  position: relative;
+}
+
+.crop-frame::before,
+.crop-frame::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.crop-corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+  border-color: rgba(29, 53, 87, 0.42);
+}
+
+.crop-tl { top: -5px; left: -5px; border-top: 1.5px solid; border-left: 1.5px solid; }
+.crop-tr { top: -5px; right: -5px; border-top: 1.5px solid; border-right: 1.5px solid; }
+.crop-bl { bottom: -5px; left: -5px; border-bottom: 1.5px solid; border-left: 1.5px solid; }
+.crop-br { bottom: -5px; right: -5px; border-bottom: 1.5px solid; border-right: 1.5px solid; }
+
+.specimen-paper {
+  background: #FFFFFF;
+  color: #111111;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.06), 0 12px 32px rgba(24, 24, 27, 0.07);
+  border: 1px solid rgba(24, 24, 27, 0.09);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.specimen-paper:hover {
+  box-shadow: 0 2px 4px rgba(24, 24, 27, 0.07), 0 16px 38px rgba(24, 24, 27, 0.09);
+}
+
+.specimen-margin-frame {
+  border: 1px dashed rgba(29, 53, 87, 0.34);
+}
+
+.specimen-typo-err {
+  background: #FBF6EA;
+  border-bottom: 1.5px wavy #B45309;
+  padding: 0 1px;
+}
+
+.specimen-md-raw {
+  color: #9B2226;
+  background: #FDF2F2;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.92em;
+}
+
+/* Micro-interaction Halus Editorial Print Studio */
+@keyframes edFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes specimenSnap {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ed-reveal {
+  animation: edFadeUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.ed-delay-1 { animation-delay: 60ms; }
+.ed-delay-2 { animation-delay: 130ms; }
+.ed-delay-3 { animation-delay: 200ms; }
+
+.specimen-snap {
+  animation: specimenSnap 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dropzone-icon {
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+
+#paper-dropzone:hover .dropzone-icon,
+#paper-dropzone.dropzone-active .dropzone-icon {
+  transform: translateY(-3px);
+  color: var(--ink-primary);
+}
+
+.crop-frame .crop-corner {
+  transition: border-color 0.22s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.crop-frame:hover .crop-corner {
+  border-color: rgba(29, 53, 87, 0.72);
+}
+
+.ed-press {
+  transition: transform 0.12s ease, background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.ed-press:active:not(:disabled) {
+  transform: scale(0.985);
+}
+
+/* --------------------------------------------------------------------------
+   1c. Motion Graphic Panduan Interaktif 4 Adegan (home.html)
+   -------------------------------------------------------------------------- */
+.mg-stage.mg-paused *,
+.mg-stage.mg-paused *::before,
+.mg-stage.mg-paused *::after {
+  animation-play-state: paused !important;
+}
+
+.mg-step-progress {
+  width: 0%;
+  height: 100%;
+  background: var(--ink-primary);
+  transform-origin: left center;
+}
+
+.mg-step-active .mg-step-progress {
+  animation: mgProgressFill 4.8s linear forwards;
+}
+
+@keyframes mgProgressFill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+@keyframes mgSceneEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mg-scene-active {
+  animation: mgSceneEnter 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Adegan 1: Drag file .docx masuk ke dropzone + progress bar + badge struktur */
+@keyframes mgFileDrop {
+  0% { opacity: 0; transform: translate(-56px, -38px) rotate(-6deg) scale(1.04); }
+  20% { opacity: 1; transform: translate(-26px, -18px) rotate(-3deg) scale(1.02); }
+  45% { opacity: 1; transform: translate(0px, 0px) rotate(0deg) scale(0.98); }
+  58% { opacity: 0; transform: translate(0px, 6px) scale(0.86); }
+  100% { opacity: 0; transform: translate(0px, 6px) scale(0.86); }
+}
+
+@keyframes mgDropHighlight {
+  0%, 28% { border-color: #D2CEC6; background-color: rgba(247, 246, 242, 0.6); }
+  42%, 62% { border-color: #1D3557; background-color: #EDF2F7; }
+  75%, 100% { border-color: #C5DFD0; background-color: #EDF5F0; }
+}
+
+@keyframes mgUploadBar {
+  0%, 42% { width: 0%; }
+  76%, 100% { width: 100%; }
+}
+
+@keyframes mgPopIn {
+  0% { opacity: 0; transform: translateY(6px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mg-s1-file { animation: mgFileDrop 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s1-zone { animation: mgDropHighlight 4.8s ease both; }
+.mg-s1-bar { animation: mgUploadBar 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s1-chip-1 { animation: mgPopIn 0.3s ease 2.6s both; }
+.mg-s1-chip-2 { animation: mgPopIn 0.3s ease 2.82s both; }
+.mg-s1-chip-3 { animation: mgPopIn 0.3s ease 3.04s both; }
+.mg-s1-chip-4 { animation: mgPopIn 0.3s ease 3.26s both; }
+
+/* Adegan 2: Margin & pedoman bergeser presisi ke 4-4-3-3 cm */
+@keyframes mgCtrlPulse {
+  0% { border-color: #E2DFD9; background-color: #FFFFFF; }
+  25%, 100% { border-color: #1D3557; background-color: #F4F7FB; }
+}
+
+@keyframes mgMarginSnap {
+  0%, 18% { padding: 10px 10px 10px 10px; border-color: rgba(210, 206, 198, 0.7); }
+  55%, 100% { padding: 20px 16px 16px 26px; border-color: rgba(29, 53, 87, 0.52); }
+}
+
+@keyframes mgIndentSnap {
+  0%, 32% { text-indent: 0px; line-height: 1.2; }
+  62%, 100% { text-indent: 18px; line-height: 1.55; }
+}
+
+.mg-s2-ctrl-1 { animation: mgCtrlPulse 1.2s ease 0.35s both; }
+.mg-s2-ctrl-2 { animation: mgCtrlPulse 1.2s ease 1.15s both; }
+.mg-s2-ctrl-3 { animation: mgCtrlPulse 1.2s ease 1.95s both; }
+.mg-s2-frame { animation: mgMarginSnap 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s2-para { animation: mgIndentSnap 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s2-badge { animation: mgPopIn 0.32s ease 2.75s both; }
+
+/* Adegan 3: Toolbar Rapikan -> Kata Baku -> Italic Asing */
+@keyframes mgBtnActive {
+  0%, 100% { background-color: #FFFFFF; color: #57534E; border-color: #E2DFD9; }
+  12%, 82% { background-color: #1D3557; color: #FFFFFF; border-color: #1D3557; }
+}
+
+@keyframes mgFadeOutQuick {
+  0%, 22% { opacity: 1; max-height: 30px; }
+  32%, 100% { opacity: 0; max-height: 0px; overflow: hidden; }
+}
+
+@keyframes mgFadeInHold {
+  0%, 26% { opacity: 0; transform: translateY(4px); }
+  38%, 100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes mgKbbiFix {
+  0%, 42% { background-color: #FBF6EA; color: #8A5A00; border-bottom: 1.5px wavy #B45309; }
+  54%, 100% { background-color: #EDF5F0; color: #1F5E3B; border-bottom: 1.5px solid #1F5E3B; }
+}
+
+@keyframes mgItalicSweep {
+  0%, 66% { font-style: normal; background-color: transparent; color: #18181B; }
+  78%, 100% { font-style: italic; background-color: #EDF2F7; color: #1D3557; }
+}
+
+.mg-s3-btn-1 { animation: mgBtnActive 1.45s ease 0.2s both; }
+.mg-s3-btn-2 { animation: mgBtnActive 1.45s ease 1.65s both; }
+.mg-s3-btn-3 { animation: mgBtnActive 1.6s ease 3.1s both; }
+.mg-s3-raw-bab { animation: mgFadeOutQuick 4.8s ease both; }
+.mg-s3-clean-bab { animation: mgFadeInHold 4.8s ease both; }
+.mg-s3-kbbi { animation: mgKbbiFix 4.8s ease both; padding: 0 3px; border-radius: 2px; }
+.mg-s3-italic { animation: mgItalicSweep 4.8s ease both; padding: 0 3px; border-radius: 2px; }
+
+/* Adegan 4: Klik Unduh .docx + kartu dokumen keluar + checklist centang */
+@keyframes mgCursorToExport {
+  0% { opacity: 0; transform: translate(-48px, 34px); }
+  25% { opacity: 1; transform: translate(0px, 0px); }
+  36% { opacity: 1; transform: translate(0px, 2px) scale(0.9); }
+  48% { opacity: 1; transform: translate(0px, 0px) scale(1); }
+  65%, 100% { opacity: 0; transform: translate(8px, 8px); }
+}
+
+@keyframes mgExportPulse {
+  0%, 30% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29, 53, 87, 0); }
+  38% { transform: scale(0.95); box-shadow: 0 0 0 6px rgba(29, 53, 87, 0.18); }
+  52%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(29, 53, 87, 0); }
+}
+
+@keyframes mgDocCardRise {
+  0%, 40% { opacity: 0; transform: translateY(14px) scale(0.96); }
+  62%, 100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mg-s4-cursor { animation: mgCursorToExport 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s4-btn { animation: mgExportPulse 4.8s ease both; }
+.mg-s4-card { animation: mgDocCardRise 4.8s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.mg-s4-ok-1 { animation: mgPopIn 0.28s ease 2.65s both; }
+.mg-s4-ok-2 { animation: mgPopIn 0.28s ease 2.95s both; }
+.mg-s4-ok-3 { animation: mgPopIn 0.28s ease 3.25s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-reveal,
+  .specimen-snap,
+  .mg-scene-active,
+  .mg-step-active .mg-step-progress,
+  .mg-s1-file, .mg-s1-zone, .mg-s1-bar, .mg-s1-chip-1, .mg-s1-chip-2, .mg-s1-chip-3, .mg-s1-chip-4,
+  .mg-s2-ctrl-1, .mg-s2-ctrl-2, .mg-s2-ctrl-3, .mg-s2-frame, .mg-s2-para, .mg-s2-badge,
+  .mg-s3-btn-1, .mg-s3-btn-2, .mg-s3-btn-3, .mg-s3-raw-bab, .mg-s3-clean-bab, .mg-s3-kbbi, .mg-s3-italic,
+  .mg-s4-cursor, .mg-s4-btn, .mg-s4-card, .mg-s4-ok-1, .mg-s4-ok-2, .mg-s4-ok-3 {
+    animation: none !important;
+  }
+  .dropzone-icon,
+  .ed-press,
+  .specimen-paper,
+  .crop-frame .crop-corner {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   2. Scrollbar Tipis & Kontrol Form Editorial
+   -------------------------------------------------------------------------- */
+.ed-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ed-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ed-scroll::-webkit-scrollbar-thumb {
+  background: var(--ink-scroll-thumb);
+  border-radius: 3px;
+}
+
+.ed-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-scroll-hover);
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--ink-primary);
+}
+
+summary {
+  list-style: none;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. Meja Kerja & Lembaran Pratinjau Kertas (A4 / F4 / Letter / B5)
+   -------------------------------------------------------------------------- */
+.desk-workspace {
+  background-color: var(--paper-desk);
+}
+
+.paper-page {
+  background: var(--paper-surface);
+  color: #000000;
+  position: relative;
+  box-shadow: 0 1px 2px rgba(24, 24, 27, 0.06), 0 6px 20px rgba(24, 24, 27, 0.05);
+  border: 1px solid rgba(24, 24, 27, 0.06);
+  box-sizing: border-box;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* Garis bantu margin teknis */
+.margin-guide-box {
+  position: absolute;
+  pointer-events: none;
+  border: 1px dashed rgba(29, 53, 87, 0.35);
+  z-index: 20;
+}
+
+/* Nomor halaman kertas */
+.paper-page-num-bottom {
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #000000;
+  user-select: none;
+  z-index: 15;
+}
+
+.paper-page-num-topright {
+  position: absolute;
+  text-align: right;
+  color: #000000;
+  user-select: none;
+  z-index: 15;
+}
+
+/* --------------------------------------------------------------------------
+   4. Komponen Dokumen Akademik (Daftar Isi, List, Tabel, Gambar, Pustaka)
+   -------------------------------------------------------------------------- */
+
+/* Dot leaders Daftar Isi / Daftar Tabel / Daftar Gambar */
+.toc-row {
+  display: flex;
+  align-items: baseline;
+  width: 100%;
+  margin-bottom: 0.28em;
+}
+
+.toc-label {
+  flex: 0 1 auto;
+  padding-right: 4px;
+}
+
+.toc-dots {
+  flex: 1 1 auto;
+  border-bottom: 1px dotted var(--ink-default);
+  margin: 0 4px;
+  min-width: 18px;
+  position: relative;
+  top: -3px;
+}
+
+.toc-page {
+  flex: 0 0 auto;
+  padding-left: 4px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Daftar berpoin / bernomor dalam isi makalah */
+.doc-list {
+  margin: 0.2em 0 0.5em 0;
+  padding-left: 1.25cm;
+}
+
+.doc-list-item {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.14em;
+}
+
+.doc-list-marker {
+  flex-shrink: 0;
+  min-width: 0.65cm;
+}
+
+.doc-list-text {
+  flex: 1;
+}
+
+/* Tabel Akademik Bernomor */
+.doc-table-wrap {
+  margin: 0.65em 0 0.8em 0;
+  width: 100%;
+}
+
+.doc-table-caption {
+  margin-bottom: 0.35em;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.doc-academic-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  line-height: 1.35;
+}
+
+.doc-academic-table th,
+.doc-academic-table td {
+  border: 1px solid var(--ink-default);
+  padding: 5px 8px;
+  vertical-align: top;
+  text-align: left;
+  word-wrap: break-word;
+}
+
+.doc-academic-table th {
+  background-color: var(--paper-table-head);
+  font-weight: 700;
+}
+
+.doc-caption-source {
+  margin-top: 0.3em;
+  font-size: 0.84em;
+  font-style: italic;
+  line-height: 1.3;
+  color: var(--ink-secondary);
+}
+
+/* Gambar Akademik Bernomor */
+.doc-figure-wrap {
+  margin: 0.7em 0 0.85em 0;
+  text-align: center;
+  width: 100%;
+}
+
+.doc-figure-media {
+  display: inline-block;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+.doc-figure-media img,
+.doc-figure-media svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.doc-figure-caption {
+  margin-top: 0.45em;
+  line-height: 1.35;
+  text-align: center;
+}
+
+/* Daftar Pustaka APA (Hanging Indent) & IEEE (Bernomor) */
+.bib-apa-entry {
+  padding-left: 1.25cm;
+  text-indent: -1.25cm;
+  margin-bottom: 0.65em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.bib-ieee-entry {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.6em;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.bib-ieee-num {
+  flex-shrink: 0;
+  width: 1.1cm;
+  text-align: left;
+}
+
+.bib-ieee-text {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   5. Wadah Tersembunyi (Paginasi & Cetak) serta Animasi Toast
+   -------------------------------------------------------------------------- */
+#measure-container {
+  position: fixed;
+  top: -99999px;
+  left: -99999px;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+#print-root {
+  display: none;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-enter {
+  animation: toastFadeIn 0.16s ease-out forwards;
+}
+
+/* --------------------------------------------------------------------------
+   6. Mode Cetak / Simpan ke PDF (Skala 1:1 dengan Dimensi Kertas Aktual)
+   -------------------------------------------------------------------------- */
+@media print {
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FFFFFF !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #app-shell,
+  #toast-container,
+  #confirm-modal,
+  #table-modal,
+  #figure-modal,
+  #measure-container {
+    display: none !important;
+  }
+
+  #print-root {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #print-root .paper-page {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    transform: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  #print-root .paper-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  #print-root .margin-guide-box {
+    display: none !important;
+  }
+}

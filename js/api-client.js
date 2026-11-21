@@ -66,7 +66,8 @@
     }
 
     for (const base of candidates) {
-      const hit = await probeUrl(base);
+      const isLocalLoopback = base.startsWith('http://127.0.0.1') || base.startsWith('http://localhost');
+      const hit = await probeUrl(base, isLocalLoopback ? 1500 : 8000);
       if (hit) {
         state.checked = true;
         state.online = true;

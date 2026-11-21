@@ -1,0 +1,84 @@
+name: Build MakaRapi Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
+      - "tests/benchmark_report.csv"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python & jalankan Unit Test (CI Gate)
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependensi Python & verifikasi 12 unit test
+        run: |
+          pip install --no-cache-dir -r requirements.txt
+          python -m unittest discover -s tests -v
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup Java 17 (Temurin) untuk Gradle Android
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+
+      - name: Kemas aset frontend PWA ke www/
+        run: python scripts/prepare_www.py
+
+      - name: Install Capacitor & buat proyek Android
+        run: |
+          npm install
+          npx cap add android
+          npx cap sync android
+
+      - name: Pasang ikon aplikasi MakaRapi pada Android launcher
+        run: |
+          python - << 'EOF'
+          from pathlib import Path
+          import shutil
+
+          src = Path("icons/icon-512.png")
+          res = Path("android/app/src/main/res")
+          if src.is_file() and res.is_dir():
+              for mipmap in res.glob("mipmap-*"):
+                  for name in ("ic_launcher.png", "ic_launcher_round.png", "ic_launcher_foreground.png"):
+                      target = mipmap / name
+                      if target.exists():
+                          shutil.copy2(src, target)
+              print("Ikon launcher MakaRapi berhasil dipasang ke Android res.")
+          EOF
+
+      - name: Build Android APK (Debug — siap install langsung di HP)
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Siapkan berkas APK untuk diunduh
+        run: |
+          mkdir -p release-apk
+          cp android/app/build/outputs/apk/debug/app-debug.apk release-apk/MakaRapi-Android.apk
+          ls -lh release-apk/MakaRapi-Android.apk
+
+      - name: Upload MakaRapi-Android.apk ke GitHub Actions Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: MakaRapi-Android-APK
+          path: release-apk/MakaRapi-Android.apk
+          retention-days: 30

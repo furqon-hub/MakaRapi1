@@ -3144,28 +3144,57 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         });
       }
 
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
       const safeName =
         (state.cover.title || 'Makalah_MakaRapi')
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '_')
           .replace(/^_+|_+$/g, '')
           .slice(0, 60) || 'makalah_makarapi';
+      const fileName = `${safeName}.docx`;
 
-      a.href = url;
-      a.download = `${safeName}.docx`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1500);
+      // Mode Aplikasi Android Native (Capacitor): simpan lewat Filesystem & buka lembar Share/Simpan Android
+      const cap = window.Capacitor;
+      const isNativeApp = Boolean(cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform());
+      if (isNativeApp && cap.Plugins && cap.Plugins.Filesystem) {
+        const base64Data = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            const out = String(reader.result || '');
+            resolve(out.includes(',') ? out.split(',')[1] : out);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const written = await cap.Plugins.Filesystem.writeFile({
+          path: fileName,
+          data: base64Data,
+          directory: 'CACHE',
+        });
+        if (cap.Plugins.Share && written?.uri) {
+          await cap.Plugins.Share.share({
+            title: fileName,
+            text: 'Dokumen makalah hasil format MakaRapi (.docx)',
+            url: written.uri,
+            dialogTitle: 'Simpan atau Buka di Microsoft Word',
+          });
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+      }
 
       const hasAutoIndex = !!(f.showToc || f.showLot || f.showLof);
       const wordHint = hasAutoIndex
         ? ' Di Microsoft Word, tekan Ctrl+A lalu F9 untuk menyegarkan nomor halaman Daftar Isi.'
         : '';
       showToast(
-        `Dokumen berhasil diekspor sebagai ${safeName}.docx${usedPython ? ' (Python python-docx)' : ' (Browser)'}.${wordHint}`,
+        `Dokumen berhasil diekspor sebagai ${fileName}${usedPython ? ' (Python python-docx)' : ' (Browser)'}.${wordHint}`,
         'success',
         hasAutoIndex ? 6500 : 3800
       );

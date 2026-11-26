@@ -11,11 +11,25 @@ from typing import Any, Dict, List
 
 from .citation_checker import audit_citations
 
-BAB_RX = re.compile(r"^(?:#+\s*)?(?:\*\*|__)?\s*BAB\s+([IVXLCDM0-9]+)\b", re.I | re.M)
+BAB_RX = re.compile(r"^(?:#+\s*)?(?:\*\*|__)?\s*(?:BAB|CHAPTH?ER)\s+([IVXLCDM0-9]+)(?!\s*:)\b", re.I)
+SISTEMATIKA_DESC_RX = re.compile(r"^(?:Bab|Chapter)\s+(?:ini|tersebut)\b", re.I)
 TABLE_TAG_RX = re.compile(r"^\[TABEL\b", re.I | re.M)
 FIGURE_TAG_RX = re.compile(r"^\[GAMBAR\b", re.I | re.M)
-MENTION_TABLE_RX = re.compile(r"\bTabel\s+\d+(?:\.\d+)?\b", re.I)
-MENTION_FIGURE_RX = re.compile(r"\bGambar\s+\d+(?:\.\d+)?\b", re.I)
+MENTION_TABLE_RX = re.compile(r"\b(?:Tabel|Table)\s+\d+(?:\.\d+)?\b", re.I)
+MENTION_FIGURE_RX = re.compile(r"\b(?:Gambar|Figure|Fig\.?)\s+\d+(?:\.\d+)?\b", re.I)
+
+
+def _count_real_babs(content: str) -> int:
+    lines = [l.strip() for l in str(content or "").replace("\r\n", "\n").splitlines()]
+    count = 0
+    for idx, line in enumerate(lines):
+        if not line or len(line) > 130 or not BAB_RX.match(line):
+            continue
+        nxt = next((lines[j] for j in range(idx + 1, len(lines)) if lines[j]), "")
+        if nxt and SISTEMATIKA_DESC_RX.match(nxt):
+            continue
+        count += 1
+    return count
 
 
 def _is_rule_compliant(fmt: Dict[str, Any], rule: Dict[str, Any]) -> bool:
@@ -63,14 +77,14 @@ def audit_document_readiness(payload: Dict[str, Any]) -> Dict[str, Any]:
         })
 
     # 2. Struktur BAB Wajib
-    babs = BAB_RX.findall(content)
-    bab_ok = len(babs) >= 2
+    bab_count = _count_real_babs(content)
+    bab_ok = bab_count >= 2
     checks.append({
         "id": "structure",
         "label": "Struktur BAB Makalah",
         "passed": bab_ok,
         "severity": "ok" if bab_ok else "warn",
-        "detail": f"Terdeteksi {len(babs)} BAB terstruktur." if bab_ok else f"Baru terdeteksi {len(babs)} BAB (disarankan minimal BAB I–III).",
+        "detail": f"Terdeteksi {bab_count} BAB terstruktur." if bab_ok else f"Baru terdeteksi {bab_count} BAB (disarankan minimal BAB I–III).",
     })
 
     # 3. Daftar Pustaka & Konsistensi Sitasi

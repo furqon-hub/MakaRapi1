@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional, Tuple
 YEAR_RX = re.compile(r"\b(19\d{2}|20\d{2}[a-z]?)\b", re.I)
 # Pola kutipan dalam kurung: (Penulis, 2021) atau (Penulis1 & Penulis2, 2021; Penulis3 dkk., 2020)
 PAREN_GROUP_RX = re.compile(r"\(([^()]{4,180})\)")
-# Pola kutipan naratif: Arianti (2021), Mulyanti & Nurhayati (2022), Dewi et al (2023), Sugiyono (2023-65)
+# Pola kutipan naratif: Arianti (2021), Mulyanti & Nurhayati (2022), Dewi et al (2023), van Gelderen et al. (2008), Sugiyono (2023-65)
 NARRATIVE_CIT_RX = re.compile(
-    r"([A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+"
-    r"(?:\s+(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})"
+    r"((?:(?:van|von|de|del|di|la|le)\s+)?[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+"
+    r"(?:\s+(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})"
     r"[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)"
 )
 MANAGED_REF_RX = re.compile(r"\[@([a-zA-Z0-9_-]+)\]")
@@ -26,13 +26,19 @@ IEEE_NUM_RX = re.compile(r"\[(\d{1,3})\]")
 IGNORE_PREFIXES = {
     "lihat", "misalnya", "misal", "contoh", "contohnya", "seperti", "antara",
     "tahun", "bulan", "periode", "pada", "pojk", "uu", "pp", "permen", "sk",
-    "bab", "tabel", "gambar", "halaman", "hal", "pasal", "ayat", "undang",
-    "undang-undang", "peraturan", "no", "nomor", "sebagaimana", "kelurahan",
-    "kota", "provinsi", "kabupaten", "universitas", "fakultas", "baruga",
-    "palu", "indonesia", "data", "statistik", "sumber", "menurut", "oleh",
-    "dari", "dalam", "buku", "jurnal", "penelitian", "hasil", "olah",
-    "model", "skala", "metode", "standar", "literasi", "keuangan",
+    "bab", "chapter", "tabel", "table", "gambar", "figure", "halaman", "hal",
+    "pasal", "ayat", "undang", "undang-undang", "peraturan", "no", "nomor",
+    "sebagaimana", "kelurahan", "kota", "provinsi", "kabupaten", "universitas",
+    "fakultas", "baruga", "palu", "indonesia", "data", "statistik", "sumber",
+    "menurut", "oleh", "dari", "dalam", "buku", "jurnal", "penelitian", "hasil",
+    "olah", "model", "skala", "metode", "standar", "literasi", "keuangan",
     "kinerja", "umkm", "qris", "fintech", "street", "food",
+    "definisi", "operasional", "variabel", "indikator", "hipotesis", "sampel",
+    "populasi", "kuesioner", "angket", "instrumen", "lampiran", "ringkasan",
+    "mahasiswa", "manajemen", "ekonomi", "bisnis", "feb", "umm", "unimed",
+    "untad", "stambuk", "angkatan", "garuda", "sage", "sciencedirect",
+    "scopus", "sinta", "doaj", "proquest", "springer", "elsevier", "wiley",
+    "according", "see", "for", "example",
 }
 
 

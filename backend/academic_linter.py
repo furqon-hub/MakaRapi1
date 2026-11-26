@@ -171,7 +171,28 @@ FOREIGN_REGEX = re.compile(
 
 # Segmen yang tidak boleh disentuh linter: tag <i>...</i>, URL, sitasi [@ref]
 PROTECTED_SEG_RX = re.compile(r"(<i>[\s\S]*?<\/i>|https?:\/\/\S+|\[@[a-zA-Z0-9_-]+\])", re.IGNORECASE)
-BAB_OR_HEADING_RX = re.compile(r"^(?:#+\s*)?(?:BAB\s+[IVXLCDM0-9]+|[A-Z]\.\s+|\d+\.\d+(?:\.\d+)*\.?\s+)", re.IGNORECASE)
+BAB_OR_HEADING_RX = re.compile(r"^(?:#+\s*)?(?:(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+|[A-Z]\.\s+|\d+\.\d+(?:\.\d+)*\.?\s+)", re.IGNORECASE)
+
+EN_STOPWORDS = {
+    "the", "of", "and", "to", "in", "is", "that", "for", "with", "are", "this",
+    "students", "research", "study", "which", "their", "from", "were", "have",
+    "been", "can", "also", "by", "as", "on", "between", "through", "they",
+}
+ID_STOPWORDS = {
+    "yang", "dan", "di", "dengan", "untuk", "dari", "pada", "dalam", "adalah",
+    "ini", "tersebut", "penelitian", "mahasiswa", "oleh", "secara", "dapat",
+    "tidak", "atau", "sebagai", "bahwa", "akan", "juga", "terhadap", "karena",
+}
+
+
+def is_predominantly_english(text: str) -> bool:
+    plain = re.sub(r"\[TABEL[^\]]*\][\s\S]*?\[\/TABEL\]|\[GAMBAR[^\]]*\]|<[^>]+>", " ", str(text or ""), flags=re.I)
+    words = re.findall(r"[A-Za-z]+", plain.lower())
+    if len(words) < 40:
+        return False
+    en_hits = sum(1 for w in words if w in EN_STOPWORDS)
+    id_hits = sum(1 for w in words if w in ID_STOPWORDS)
+    return en_hits >= 15 and en_hits > (id_hits * 2.5)
 
 
 def _match_case(original: str, replacement: str) -> str:
@@ -187,7 +208,14 @@ def lint_academic_text(
     fix_kbbi: bool = True,
     italicize_foreign: bool = True,
 ) -> Dict[str, Any]:
-    lines = str(raw_text or "").replace("\r\n", "\n").split("\n")
+    text_str = str(raw_text or "")
+    skipped_reason = ""
+    effective_italicize = italicize_foreign
+    if italicize_foreign and is_predominantly_english(text_str):
+        effective_italicize = False
+        skipped_reason = "english_document"
+
+    lines = text_str.replace("\r\n", "\n").split("\n")
     out_lines: List[str] = []
     in_table = False
 
@@ -234,7 +262,7 @@ def lint_academic_text(
 
                 seg = KBBI_REGEX.sub(_repl_kbbi, seg)
 
-            if italicize_foreign and not is_heading:
+            if effective_italicize and not is_heading:
                 def _repl_foreign(m: re.Match) -> str:
                     nonlocal foreign_count
                     orig = m.group(1)
@@ -257,4 +285,5 @@ def lint_academic_text(
         "totalCount": kbbi_count + foreign_count,
         "kbbiChanges": kbbi_changes,
         "foreignTerms": foreign_changes,
+        "skippedReason": skipped_reason,
     }

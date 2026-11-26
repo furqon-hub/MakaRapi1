@@ -252,12 +252,18 @@
     }
 
     // 3. Pisahkan bagian Judul Awal, Kata Pengantar, Daftar Isi lama, Isi Utama (BAB), dan Daftar Pustaka
-    const BAB_RX = /^BAB\s+[IVXLCDM0-9]+\b/i;
-    const PREFACE_RX = /^(?:KATA\s+PENGANTAR|PRAKATA)$/i;
-    const FRONT_LIST_RX = /^(?:DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR)$/i;
-    const BIB_RX = /^(?:DAFTAR\s+PUSTAKA|REFERENSI|BIBLIOGRAFI)$/i;
+    const BAB_RX = /^(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+(?!\s*:)\b/i;
+    const SISTEMATIKA_DESC_RX = /^(?:Bab|Chapter)\s+(?:ini|tersebut)\b/i;
+    const GENERIC_COVER_RX = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
+    const PREFACE_RX = /^(?:KATA\s+PENGANTAR|PRAKATA|PREFACE|ACKNOWLEDGEMENTS?)$/i;
+    const FRONT_LIST_RX = /^(?:DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|TABLE\s+OF\s+CONTENTS?|LIST\s+OF\s+TABLES?|LIST\s+OF\s+FIGURES?)$/i;
+    const BIB_RX = /^(?:DAFTAR\s+PUSTAKA|DAFTAR\s+RUJUKAN|REFERENSI|REFERENCES?|BIBLIOGRAFI|BIBLIOGRAPHY|WORKS\s+CITED)$/i;
 
-    const firstBabIdx = emittedBlocks.findIndex((b) => b.kind === 'p' && BAB_RX.test(b.text));
+    const firstBabIdx = emittedBlocks.findIndex((b, idx) => {
+      if (b.kind !== 'p' || !BAB_RX.test(b.text)) return false;
+      const nxt = emittedBlocks.slice(idx + 1).find((x) => x.kind === 'p' && x.text.trim());
+      return !(nxt && SISTEMATIKA_DESC_RX.test(nxt.text.trim()));
+    });
     const bibIdx = emittedBlocks.findIndex((b, idx) => b.kind === 'p' && BIB_RX.test(b.text) && idx > Math.max(0, firstBabIdx));
 
     let suggestedTitle = '';
@@ -291,8 +297,8 @@
           mode = 'front_list';
           continue;
         }
-        if (mode === 'cover' && !suggestedTitle && !/^MAKALAH$/i.test(b.text) && b.text.length >= 10 && b.text.length <= 200) {
-          suggestedTitle = b.text.toUpperCase();
+        if (mode === 'cover' && !suggestedTitle && !GENERIC_COVER_RX.test(b.text) && b.text.length >= 10 && b.text.length <= 240) {
+          suggestedTitle = b.text.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().toUpperCase();
         } else if (mode === 'preface') {
           prefaceParas.push(b.text);
         }
@@ -408,15 +414,15 @@
   }
 
   function detectTitleFromText(rawText, fileName) {
-    const genericHeaderRx = /^(?:MAKALAH|USULAN\s+PENELITIAN|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
+    const genericHeaderRx = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
     const lines = String(rawText || '')
       .replace(/\r\n/g, '\n')
       .split('\n')
-      .map((l) => l.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim())
+      .map((l) => l.replace(/^#+\s*/, '').replace(/\*\*/g, '').replace(/<[^>]+>/g, '').trim())
       .filter(Boolean);
 
     for (const line of lines.slice(0, 8)) {
-      if (!/^BAB\s+[IVXLCDM0-9]+/i.test(line) && !genericHeaderRx.test(line) && line.length >= 10 && line.length <= 220) {
+      if (!/^(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+/i.test(line) && !genericHeaderRx.test(line) && line.length >= 10 && line.length <= 240) {
         return line.toUpperCase();
       }
     }
@@ -525,7 +531,7 @@
       const babCount =
         typeof extracted.babCount === 'number'
           ? extracted.babCount
-          : (trimmed.match(/^(?:#+\s*)?(?:\*\*|__)?\s*BAB\s+[IVXLCDM0-9]+/gim) || []).length;
+          : (trimmed.match(/^(?:#+\s*)?(?:\*\*|__)?\s*(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+(?!\s*:)/gim) || []).length;
       uploadedDoc = {
         fileName: file.name,
         sizeBytes: file.size || 0,

@@ -597,7 +597,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
   }
 
   function parseChapterNumber(babLabel) {
-    const m = String(babLabel || '').match(/BAB\s+([IVXLCDM]+|\d+)/i);
+    const m = String(babLabel || '').match(/(?:BAB|CHAPTH?ER)\s+([IVXLCDM]+|\d+)/i);
     if (!m) return 0;
     const token = m[1].toUpperCase();
     if (/^\d+$/.test(token)) return parseInt(token, 10);
@@ -1335,13 +1335,19 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
     const ignorePrefixes = new Set([
       'lihat', 'misalnya', 'misal', 'contoh', 'contohnya', 'seperti', 'antara',
       'tahun', 'bulan', 'periode', 'pada', 'pojk', 'uu', 'pp', 'permen', 'sk',
-      'bab', 'tabel', 'gambar', 'halaman', 'hal', 'pasal', 'ayat', 'undang',
-      'undang-undang', 'peraturan', 'no', 'nomor', 'sebagaimana', 'kelurahan',
-      'kota', 'provinsi', 'kabupaten', 'universitas', 'fakultas', 'baruga',
-      'palu', 'indonesia', 'data', 'statistik', 'sumber', 'menurut', 'oleh',
-      'dari', 'dalam', 'buku', 'jurnal', 'penelitian', 'hasil', 'olah',
-      'model', 'skala', 'metode', 'standar', 'literasi', 'keuangan',
+      'bab', 'chapter', 'tabel', 'table', 'gambar', 'figure', 'halaman', 'hal',
+      'pasal', 'ayat', 'undang', 'undang-undang', 'peraturan', 'no', 'nomor',
+      'sebagaimana', 'kelurahan', 'kota', 'provinsi', 'kabupaten', 'universitas',
+      'fakultas', 'baruga', 'palu', 'indonesia', 'data', 'statistik', 'sumber',
+      'menurut', 'oleh', 'dari', 'dalam', 'buku', 'jurnal', 'penelitian', 'hasil',
+      'olah', 'model', 'skala', 'metode', 'standar', 'literasi', 'keuangan',
       'kinerja', 'umkm', 'qris', 'fintech', 'street', 'food',
+      'definisi', 'operasional', 'variabel', 'indikator', 'hipotesis', 'sampel',
+      'populasi', 'kuesioner', 'angket', 'instrumen', 'lampiran', 'ringkasan',
+      'mahasiswa', 'manajemen', 'ekonomi', 'bisnis', 'feb', 'umm', 'unimed',
+      'untad', 'stambuk', 'angkatan', 'garuda', 'sage', 'sciencedirect',
+      'scopus', 'sinta', 'doaj', 'proquest', 'springer', 'elsevier', 'wiley',
+      'according', 'see', 'for', 'example',
     ]);
 
     const extractSurname = (chunk) => {
@@ -1431,7 +1437,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       });
     }
 
-    const narrRx = /([A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+(?:\s+(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)/g;
+    const narrRx = /((?:(?:van|von|de|del|di|la|le)\s+)?[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+(?:\s+(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)/g;
     while ((m = narrRx.exec(stripped)) !== null) {
       const wordsRaw = m[1].trim().replace(/[,\s]+$/, '').split(/\s+/).map((w) => w.replace(/^[.,]+|[.,]+$/g, '')).filter(Boolean);
       while (wordsRaw.length && ignorePrefixes.has(wordsRaw[0].toLowerCase())) wordsRaw.shift();
@@ -1561,13 +1567,24 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       });
     }
 
-    const babs = content.match(/^(?:#+\s*)?(?:\*\*|__)?\s*BAB\s+[IVXLCDM0-9]+\b/gim) || [];
+    const bodyLines = content.replace(/\r\n/g, '\n').split('\n').map((l) => l.trim());
+    let babCount = 0;
+    for (let bi = 0; bi < bodyLines.length; bi++) {
+      const bl = bodyLines[bi];
+      if (!bl || bl.length > 130 || !/^(?:#+\s*)?(?:\*\*|__)?\s*(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+(?!\s*:)\b/i.test(bl)) continue;
+      let nxtB = '';
+      for (let bj = bi + 1; bj < bodyLines.length; bj++) {
+        if (bodyLines[bj]) { nxtB = bodyLines[bj]; break; }
+      }
+      if (nxtB && /^(?:Bab|Chapter)\s+(?:ini|tersebut)\b/i.test(nxtB)) continue;
+      babCount++;
+    }
     checks.push({
       id: 'structure',
       label: 'Struktur BAB Makalah',
-      passed: babs.length >= 2,
-      severity: babs.length >= 2 ? 'ok' : 'warn',
-      detail: babs.length >= 2 ? `Terdeteksi ${babs.length} BAB terstruktur.` : `Baru terdeteksi ${babs.length} BAB (disarankan minimal BAB I–III).`,
+      passed: babCount >= 2,
+      severity: babCount >= 2 ? 'ok' : 'warn',
+      detail: babCount >= 2 ? `Terdeteksi ${babCount} BAB terstruktur.` : `Baru terdeteksi ${babCount} BAB (disarankan minimal BAB I–III).`,
     });
 
     const cit = auditCitationsLocally();
@@ -1805,7 +1822,8 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
   // =====================================================================
   // 6. MESIN PERAPIHAN TEKS 1-KLIK (AI/MD, BARIS PDF, SPASI & TANDA BACA)
   // =====================================================================
-  const REGEX_BAB_LINE = /^(?:#+\s*)?(?:BAB\s+[IVXLCDM0-9]+)(?!\s*:)\b/i;
+  const REGEX_BAB_LINE = /^(?:#+\s*)?(?:(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+)(?!\s*:)\b/i;
+  const REGEX_SISTEMATIKA_DESC = /^(?:Bab|Chapter)\s+(?:ini|tersebut)\b/i;
   const REGEX_LIST_LINE = /^(?:[-•*–—]\s+|\d+[\.\)]\s+|[a-z][\.\)]\s+)/;
 
   function isSubsubbabLine(line) {
@@ -2014,7 +2032,25 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       const kbbiRx = new RegExp(`\\b(${Object.keys(kbbiMap).map(escRx).join('|')})\\b`, 'gi');
       const foreignRx = new RegExp(`(?<![A-Za-z0-9_])(${foreignTerms.map(escRx).join('|')})(?![A-Za-z0-9_])`, 'gi');
       const protectedRx = /(<i>[\s\S]*?<\/i>|https?:\/\/\S+|\[@[a-zA-Z0-9_-]+\])/gi;
-      const headRx = /^(?:#+\s*)?(?:BAB\s+[IVXLCDM0-9]+|[A-Z]\.\s+|\d+\.\d+(?:\.\d+)*\.?\s+)/i;
+      const headRx = /^(?:#+\s*)?(?:(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+|[A-Z]\.\s+|\d+\.\d+(?:\.\d+)*\.?\s+)/i;
+
+      const isPredominantlyEnglish = (txt) => {
+        const plain = String(txt || '').replace(/\[TABEL[^\]]*\][\s\S]*?\[\/TABEL\]|\[GAMBAR[^\]]*\]|<[^>]+>/gi, ' ').toLowerCase();
+        const words = plain.match(/[a-z]+/g) || [];
+        if (words.length < 40) return false;
+        const enSet = new Set(['the', 'of', 'and', 'to', 'in', 'is', 'that', 'for', 'with', 'are', 'this', 'students', 'research', 'study', 'which', 'their', 'from', 'were', 'have', 'been', 'can', 'also', 'by', 'as', 'on', 'between', 'through', 'they']);
+        const idSet = new Set(['yang', 'dan', 'di', 'dengan', 'untuk', 'dari', 'pada', 'dalam', 'adalah', 'ini', 'tersebut', 'penelitian', 'mahasiswa', 'oleh', 'secara', 'dapat', 'tidak', 'atau', 'sebagai', 'bahwa', 'akan', 'juga', 'terhadap', 'karena']);
+        let en = 0; let id = 0;
+        words.forEach((w) => { if (enSet.has(w)) en++; if (idSet.has(w)) id++; });
+        return en >= 15 && en > id * 2.5;
+      };
+
+      let skippedReason = '';
+      let effectiveItalicize = italicizeForeign;
+      if (italicizeForeign && isPredominantlyEnglish(rawText)) {
+        effectiveItalicize = false;
+        skippedReason = 'english_document';
+      }
 
       let kbbiCount = 0;
       let foreignCount = 0;
@@ -2037,7 +2073,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
               return matchCase(m, target);
             });
           }
-          if (italicizeForeign && !isHead) {
+          if (effectiveItalicize && !isHead) {
             seg = seg.replace(foreignRx, (m) => {
               foreignCount++;
               return `<i>${m}</i>`;
@@ -2047,7 +2083,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         }
         return parts.join('');
       });
-      return { text: out.join('\n'), kbbiCount, foreignCount, totalCount: kbbiCount + foreignCount };
+      return { text: out.join('\n'), kbbiCount, foreignCount, totalCount: kbbiCount + foreignCount, skippedReason };
     },
 
     cleanAll(rawText) {
@@ -2150,9 +2186,15 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         continue;
       }
 
-      // 3. Deteksi BAB (lewati baris Sistematika Penulisan seperti "BAB I : PENDAHULUAN")
-      const isSistematikaBab = /^BAB\s+[IVXLCDM0-9]+\s*:/i.test(line);
-      const babMatch = !isSistematikaBab ? line.match(/^(?:#\s+)?(BAB\s+[IVXLCDM0-9]+)(?:\s*[:\-–—]?\s*(.*))?$/i) : null;
+      // 3. Deteksi BAB / CHAPTER (lewati baris Sistematika Penulisan seperti "BAB I : PENDAHULUAN" atau yang diikuti "Bab ini...")
+      let peekNonEmpty = '';
+      for (let pk = i + 1; pk < lines.length; pk++) {
+        if (lines[pk].trim()) { peekNonEmpty = lines[pk].trim(); break; }
+      }
+      const isSistematikaBab =
+        /^(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+\s*:/i.test(line) ||
+        (peekNonEmpty && REGEX_SISTEMATIKA_DESC.test(peekNonEmpty.replace(/<[^>]+>/g, '').trim()));
+      const babMatch = !isSistematikaBab ? line.match(/^(?:#\s+)?((?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+)(?:\s*[:\-–—]?\s*(.*))?$/i) : null;
       const mdH1 = !babMatch ? line.match(/^#\s+(.+)$/) : null;
       if (babMatch || mdH1) {
         let babLabel = '';
@@ -2169,7 +2211,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
                 !isSubbabLine(cand) &&
                 !REGEX_LIST_LINE.test(cand) &&
                 !isSpecialTagLine(cand) &&
-                !/^(?:#\s+)?BAB\s+[IVXLCDM0-9]+/i.test(cand) &&
+                !/^(?:#\s+)?(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+/i.test(cand) &&
                 cand.length <= 80 &&
                 !cand.endsWith('.')
               ) {
@@ -4728,6 +4770,10 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         // Fallback ke JS lokal
       }
       if (!res) res = TextCleaner.lintAcademic(state.content, { fixKbbi, italicizeForeign });
+      if (res.skippedReason === 'english_document') {
+        showToast('Naskah terdeteksi berbahasa Inggris — pemiringan istilah asing dilewati otomatis.', 'info');
+        return;
+      }
       if (res.totalCount === 0) {
         showToast(emptyMsg, 'info');
         return;

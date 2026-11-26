@@ -465,6 +465,139 @@ class TestMakaRapiHybrid(unittest.TestCase):
         self.assertEqual(cit["score"], 100)
         self.assertEqual(cit["matchedCount"], 1)
 
+    def test_style_inherited_upper_roman_bab_daftar_rujukan_and_sistematika_without_colon(self):
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import nsdecls, qn
+
+        doc = Document()
+        num_part = doc.part.numbering_part._element
+        abs_xml = parse_xml(
+            f'<w:abstractNum {nsdecls("w")} w:abstractNumId="77">'
+            f'<w:multiLevelType w:val="multilevel"/>'
+            f'<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="upperRoman"/><w:lvlText w:val="BAB %1"/></w:lvl>'
+            f'<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1.%2"/></w:lvl>'
+            f'<w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1.%2.%3"/></w:lvl>'
+            f'</w:abstractNum>'
+        )
+        num_xml = parse_xml(f'<w:num {nsdecls("w")} w:numId="77"><w:abstractNumId w:val="77"/></w:num>')
+        first_num = num_part.find(qn("w:num"))
+        if first_num is not None:
+            first_num.addprevious(abs_xml)
+        else:
+            num_part.append(abs_xml)
+        num_part.append(num_xml)
+
+        # Tempelkan numPr ke style Heading 1/2/3 di word/styles.xml (seperti template skripsi resmi)
+        for st_name, ilvl in (("Heading 1", 0), ("Heading 2", 1), ("Heading 3", 2)):
+            st_el = doc.styles[st_name].element
+            pPr = st_el.find(qn("w:pPr"))
+            if pPr is None:
+                pPr = parse_xml(f'<w:pPr {nsdecls("w")}/>')
+                st_el.append(pPr)
+            pPr.append(parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="{ilvl}"/><w:numId w:val="77"/></w:numPr>'))
+
+        # Cover dengan kata miring dan header generik PROPOSAL ARTIKEL
+        doc.add_paragraph("PROPOSAL ARTIKEL")
+        p_cov = doc.add_paragraph()
+        p_cov.add_run("PENGARUH ")
+        r_it = p_cov.add_run("SELF-EFFICACY")
+        r_it.italic = True
+        p_cov.add_run(" TERHADAP KESIAPAN KERJA MAHASISWA")
+
+        # DAFTAR ISI memakai Heading 1 tetapi mematikan numPr lewat numId=0
+        p_di = doc.add_paragraph("DAFTAR ISI", style="Heading 1")
+        p_di._p.get_or_add_pPr().append(parse_xml(f'<w:numPr {nsdecls("w")}><w:numId w:val="0"/></w:numPr>'))
+
+        # BAB I..II dari style Heading 1/2/3 + Sistematika Penulisan tanpa titik dua
+        doc.add_paragraph("PENDAHULUAN", style="Heading 1")
+        doc.add_paragraph("Latar Belakang", style="Heading 2")
+        doc.add_paragraph("Data awal (Garuda, SAGE, ScienceDirect, 2017–2021) dan (Mahasiswa Manajemen 2019 FEB UMM) dikaji bersama van Gelderen et al. (2008).")
+        doc.add_paragraph("Sistematika Penulisan", style="Heading 2")
+        doc.add_paragraph("BAB I PENDAHULUAN")
+        doc.add_paragraph("Bab ini menguraikan latar belakang masalah.")
+        doc.add_paragraph("BAB II KAJIAN PUSTAKA")
+        doc.add_paragraph("Bab ini membahas landasan teori.")
+
+        doc.add_paragraph("KAJIAN PUSTAKA", style="Heading 1")
+        doc.add_paragraph("Kajian Teoritis", style="Heading 2")
+        doc.add_paragraph("Konsep Dasar", style="Heading 3")
+        doc.add_paragraph("Menurut Sugiyono (2023) metode kuantitatif sangat relevan.")
+
+        doc.add_paragraph("DAFTAR RUJUKAN")
+        doc.add_paragraph("Sugiyono. (2023). Metode Penelitian Kuantitatif. Alfabeta.")
+        doc.add_paragraph("van Gelderen, M., et al. (2008). Explaining entrepreneurial intentions. Career Development International.")
+        doc.add_paragraph("KUESIONER PENELITIAN")
+        doc.add_paragraph("Daftar pertanyaan kuesioner.")
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        parsed = parse_docx_bytes(buf.getvalue(), "template_style_heading.docx")
+
+        # Judul cover bersih tanpa tag <I>
+        self.assertEqual(parsed["suggestedTitle"], "PENGARUH SELF-EFFICACY TERHADAP KESIAPAN KERJA MAHASISWA")
+        self.assertNotIn("<I>", parsed["suggestedTitle"])
+        # Tepat 2 BAB (5 baris sistematika tidak boleh jadi BAB palsu, DAFTAR ISI tidak jadi BAB I)
+        self.assertEqual(parsed["babCount"], 2)
+        self.assertIn("BAB I PENDAHULUAN", parsed["bodyText"])
+        self.assertIn("1.1 Latar Belakang", parsed["bodyText"])
+        self.assertIn("BAB II KAJIAN PUSTAKA", parsed["bodyText"])
+        self.assertIn("2.1 Kajian Teoritis", parsed["bodyText"])
+        self.assertIn("2.1.1 Konsep Dasar", parsed["bodyText"])
+        # DAFTAR RUJUKAN terekstrak, KUESIONER terpotong
+        self.assertEqual(len(parsed["bibliography"].splitlines()), 2)
+        self.assertNotIn("KUESIONER", parsed["bibliography"])
+
+        # Non-sitasi (Garuda..., Mahasiswa Manajemen...) tidak bikin false positive; van Gelderen & Sugiyono cocok 100%
+        cit = audit_citations({
+            "content": parsed["bodyText"],
+            "citations": [],
+            "manualBibliography": parsed["bibliography"],
+            "citationStyle": "apa",
+        })
+        self.assertEqual(cit["inTextCount"], 2)
+        self.assertEqual(cit["matchedCount"], 2)
+        self.assertEqual(cit["score"], 100)
+
+    def test_english_proposal_chapter_references_and_linter_skip(self):
+        doc = Document()
+        doc.add_paragraph("A RESEARCH PROPOSAL")
+        doc.add_paragraph("STUDENTS PERCEPTIONS OF ENGLISH CLUB ON SPEAKING SKILL")
+        doc.add_paragraph("TABLE OF CONTENT")
+        doc.add_paragraph("CHAPTHER I")
+        doc.add_paragraph("INTRODUCTION")
+        doc.add_paragraph(
+            "In this research study, students of the university improve their speaking skill with online feedback "
+            "and purposive sampling. The results of the study show that students who are active in the club have "
+            "better confidence and communication from their regular practice according to Riyadini (2022)."
+        )
+        doc.add_paragraph("CHAPTER II")
+        doc.add_paragraph("LITERATURE REVIEW")
+        doc.add_paragraph("This chapter discusses the framework and theories used in the research.")
+        doc.add_paragraph("REFERENCES")
+        doc.add_paragraph("Riyadini, A. (2022). English Club Impact on Speaking Skill. Journal of English Education.")
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        parsed = parse_docx_bytes(buf.getvalue(), "english_proposal.docx")
+
+        self.assertEqual(parsed["suggestedTitle"], "STUDENTS PERCEPTIONS OF ENGLISH CLUB ON SPEAKING SKILL")
+        self.assertEqual(parsed["babCount"], 2)
+        self.assertEqual(len(parsed["bibliography"].splitlines()), 1)
+        self.assertNotIn("TABLE OF CONTENT", parsed["bodyText"])
+
+        cit = audit_citations({
+            "content": parsed["bodyText"],
+            "citations": [],
+            "manualBibliography": parsed["bibliography"],
+            "citationStyle": "apa",
+        })
+        self.assertEqual(cit["score"], 100)
+
+        # Naskah dominan Inggris: Italic Asing otomatis dilewati agar tidak memiringkan teks Inggris
+        lint = lint_academic_text(parsed["bodyText"], fix_kbbi=False, italicize_foreign=True)
+        self.assertEqual(lint["foreignCount"], 0)
+        self.assertEqual(lint["skippedReason"], "english_document")
+
 
 if __name__ == "__main__":
     unittest.main()

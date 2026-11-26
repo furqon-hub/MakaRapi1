@@ -6,7 +6,7 @@
    - CDN     : Stale-while-revalidate agar font/Tailwind/Mammoth tetap tersedia offline
    ========================================================================== */
 
-const CACHE_VERSION = 'makarapi-shell-v2';
+const CACHE_VERSION = 'makarapi-shell-v3';
 const APP_SHELL_URLS = [
   '/',
   '/home.html',

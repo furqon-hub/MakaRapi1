@@ -45,7 +45,19 @@
     if (state.checked && !force) return { ...state };
 
     const candidates = [];
-    // 1. Prioritaskan URL produksi HTTPS bila dikonfigurasi (misal untuk Capacitor Android APK)
+    const addCandidate = (u) => {
+      if (!candidates.includes(u)) candidates.push(u);
+    };
+
+    const isCapacitorNative = Boolean(
+      window.Capacitor &&
+      typeof window.Capacitor.isNativePlatform === 'function' &&
+      window.Capacitor.isNativePlatform()
+    );
+    const isLocalHostDev =
+      !isCapacitorNative &&
+      (window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost');
+
     let customApi = '';
     try {
       customApi = String(localStorage.getItem('makarapi_api_base_url_v1') || window.MAKARAPI_API_BASE_URL || '')
@@ -54,15 +66,21 @@
     } catch {
       customApi = String(window.MAKARAPI_API_BASE_URL || '').trim().replace(/\/+$/, '');
     }
-    if (customApi && /^https?:\/\//i.test(customApi)) {
-      candidates.push(customApi);
-    }
-    if (window.location.protocol === 'http:' || window.location.protocol === 'https:') {
-      candidates.push(''); // Same origin (misal http://127.0.0.1:8000 atau domain HTTPS deploy)
-    }
-    const localFastApi = 'http://127.0.0.1:8000';
-    if (window.location.origin !== localFastApi) {
-      candidates.push(localFastApi);
+
+    if (isCapacitorNative) {
+      // Di aplikasi Android APK: langsung pakai server HTTPS produksi
+      if (customApi && /^https?:\/\//i.test(customApi)) addCandidate(customApi);
+    } else if (isLocalHostDev) {
+      // Di pengembangan lokal: prioritaskan server lokal 127.0.0.1:8000, lalu fallback ke HTTPS produksi
+      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') addCandidate('');
+      addCandidate('http://127.0.0.1:8000');
+      if (customApi && /^https?:\/\//i.test(customApi)) addCandidate(customApi);
+    } else {
+      // Di web online HTTPS (Vercel): same-origin dulu, lalu customApi bila berbeda
+      if (window.location.protocol === 'http:' || window.location.protocol === 'https:') addCandidate('');
+      if (customApi && /^https?:\/\//i.test(customApi) && customApi !== window.location.origin) {
+        addCandidate(customApi);
+      }
     }
 
     for (const base of candidates) {

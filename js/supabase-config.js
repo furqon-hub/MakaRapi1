@@ -12,6 +12,6 @@ window.MAKARAPI_SUPABASE_CONFIG = {
   anonKey: '',  // Public anon key dari Project Settings -> API
 };
 
-// Opsional: isi URL HTTPS backend FastAPI setelah di-deploy (Render/Railway)
-// agar aplikasi Android Capacitor (.apk) otomatis terhubung ke server Python.
-window.MAKARAPI_API_BASE_URL = '';
+// URL HTTPS backend FastAPI produksi (Vercel) agar aplikasi Android Capacitor (.apk)
+// otomatis terhubung ke server Python python-docx + OWASP secara online.
+window.MAKARAPI_API_BASE_URL = 'https://makarapi.vercel.app';

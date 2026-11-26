@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python & jalankan Unit Test (CI Gate)
         uses: actions/setup-python@v5
@@ -27,13 +27,13 @@ jobs:
           pip install --no-cache-dir -r requirements.txt
           python -m unittest discover -s tests -v
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup Java 17 (Temurin) untuk Gradle Android
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: "temurin"
           java-version: "17"

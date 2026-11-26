@@ -45,6 +45,7 @@ def get_allowed_cors_origins() -> List[str]:
         "http://localhost",
         "capacitor://localhost",
         "https://localhost",
+        "https://makarapi.vercel.app",
     ]
     vercel_url = os.environ.get("VERCEL_URL", "").strip()
     if vercel_url:

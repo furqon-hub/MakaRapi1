@@ -6,12 +6,17 @@ Menyediakan penyimpanan persisten (CRUD) profil pedoman akademik di data/makarap
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DEFAULT_DB_PATH = ROOT_DIR / "data" / "makarapi.db"
+DEFAULT_DB_PATH = (
+    Path("/tmp/makarapi.db")
+    if (os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"))
+    else ROOT_DIR / "data" / "makarapi.db"
+)
 
 BUILTIN_SEED_PROFILES = [
     {

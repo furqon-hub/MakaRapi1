@@ -46,6 +46,11 @@ def get_allowed_cors_origins() -> List[str]:
         "capacitor://localhost",
         "https://localhost",
     ]
+    vercel_url = os.environ.get("VERCEL_URL", "").strip()
+    if vercel_url:
+        v_origin = vercel_url if vercel_url.startswith("http") else f"https://{vercel_url}"
+        if v_origin not in defaults:
+            defaults.append(v_origin)
     extra_raw = os.environ.get("MAKARAPI_ALLOWED_ORIGINS", "").strip()
     if extra_raw:
         for item in extra_raw.split(","):

@@ -367,6 +367,11 @@ class TestMakaRapiHybrid(unittest.TestCase):
         self.assertTrue((root / "render.yaml").is_file())
         self.assertTrue((root / "js" / "supabase-client.js").is_file())
 
+        vercel_cfg = json.loads((root / "vercel.json").read_text(encoding="utf-8"))
+        self.assertEqual(vercel_cfg["rewrites"][0]["destination"], "/api/index.py")
+        from api.index import app as vercel_app
+        self.assertIs(vercel_app, app)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -372,6 +372,99 @@ class TestMakaRapiHybrid(unittest.TestCase):
         from api.index import app as vercel_app
         self.assertIs(vercel_app, app)
 
+    def test_pdf_to_word_multilevel_numbering_split_tables_and_narrative_citations(self):
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import nsdecls, qn
+
+        doc = Document()
+        # Definisikan abstractNum multi-level %1.%2 dan %1.%2.%3 untuk menguji resolver %2/%3
+        num_part = doc.part.numbering_part._element
+        abs_xml = parse_xml(
+            f'<w:abstractNum {nsdecls("w")} w:abstractNumId="99">'
+            f'<w:multiLevelType w:val="multilevel"/>'
+            f'<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl>'
+            f'<w:lvl w:ilvl="1"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1.%2"/></w:lvl>'
+            f'<w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1.%2.%3"/></w:lvl>'
+            f'</w:abstractNum>'
+        )
+        num_xml = parse_xml(f'<w:num {nsdecls("w")} w:numId="99"><w:abstractNumId w:val="99"/></w:num>')
+        first_num = num_part.find(qn("w:num"))
+        if first_num is not None:
+            first_num.addprevious(abs_xml)
+        else:
+            num_part.append(abs_xml)
+        num_part.append(num_xml)
+
+        def add_num_p(text: str, ilvl: int):
+            p = doc.add_paragraph(text)
+            pPr = p._p.get_or_add_pPr()
+            pPr.append(parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="{ilvl}"/><w:numId w:val="99"/></w:numPr>'))
+            return p
+
+        # Cover dengan header generik yang harus dilewati
+        doc.add_paragraph("USULAN PENELITIAN")
+        doc.add_paragraph("PERAN FINANCIAL LITERACY DALAM MENINGKATKAN KINERJA UMKM")
+        doc.add_paragraph("Oleh: Mahasiswa Uji")
+
+        doc.add_paragraph("BAB I PENDAHULUAN")
+        add_num_p("Latar Belakang", 1)
+        doc.add_paragraph("Menurut Arianti (2021) literasi keuangan memengaruhi kinerja dalam kategori")
+        doc.add_paragraph("menengah serta pemanfaatan fintech pada pelaku UMKM.")
+        add_num_p("Rumusan Masalah", 1)
+        add_num_p("Sistematika Penulisan BAB II : KAJIAN PUSTAKA", 1)
+        doc.add_paragraph("Bab ini membahas kajian teori.")
+
+        doc.add_paragraph("BAB II KAJIAN PUSTAKA")
+        add_num_p("Kajian Teoritis", 1)
+        add_num_p("Financial Literacy", 2)
+        doc.add_paragraph("Tabel 3. 1 Skala Likert")
+        t1 = doc.add_table(rows=2, cols=2)
+        t1.cell(0, 0).text = "No"
+        t1.cell(0, 1).text = "Nilai"
+        t1.cell(1, 0).text = "1"
+        t1.cell(1, 1).text = "Sangat Setuju"
+        # Tabel lanjutan terpecah dengan header sama
+        t2 = doc.add_table(rows=2, cols=2)
+        t2.cell(0, 0).text = "No"
+        t2.cell(0, 1).text = "Nilai"
+        t2.cell(1, 0).text = "2"
+        t2.cell(1, 1).text = "Setuju"
+
+        doc.add_paragraph("DAFTAR PUSTAKA")
+        doc.add_paragraph("Arianti, B. F. (2021). Literasi Keuangan (Teori dan Implementasinya) Di")
+        doc.add_paragraph("Indonesia. Pena Persada.")
+        doc.add_paragraph("KUESIONER PENELITIAN")
+        doc.add_paragraph("Identitas Responden: Nama Usaha")
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        parsed = parse_docx_bytes(buf.getvalue(), "usulan_pdf_convert.docx")
+
+        self.assertEqual(parsed["suggestedTitle"], "PERAN FINANCIAL LITERACY DALAM MENINGKATKAN KINERJA UMKM")
+        self.assertEqual(parsed["babCount"], 2)
+        self.assertNotIn("%2", parsed["bodyText"])
+        self.assertNotIn("%3", parsed["bodyText"])
+        self.assertIn("1.1 Latar Belakang", parsed["bodyText"])
+        self.assertIn("1.2 Rumusan Masalah", parsed["bodyText"])
+        self.assertIn("2.1 Kajian Teoritis", parsed["bodyText"])
+        self.assertIn("2.1.1 Financial Literacy", parsed["bodyText"])
+        self.assertIn("dalam kategori menengah", parsed["bodyText"])
+        self.assertEqual(parsed["tableCount"], 1)
+        self.assertIn('[TABEL judul="Skala Likert"]', parsed["bodyText"])
+        self.assertIn("2 | Setuju", parsed["bodyText"])
+        self.assertNotIn("KUESIONER", parsed["bibliography"])
+        self.assertEqual(len(parsed["bibliography"].splitlines()), 1)
+        self.assertIn("Indonesia. Pena Persada.", parsed["bibliography"])
+
+        cit = audit_citations({
+            "content": parsed["bodyText"],
+            "citations": [],
+            "manualBibliography": parsed["bibliography"],
+            "citationStyle": "apa",
+        })
+        self.assertEqual(cit["score"], 100)
+        self.assertEqual(cit["matchedCount"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -14,13 +14,25 @@ from typing import Any, Dict, List, Optional, Tuple
 YEAR_RX = re.compile(r"\b(19\d{2}|20\d{2}[a-z]?)\b", re.I)
 # Pola kutipan dalam kurung: (Penulis, 2021) atau (Penulis1 & Penulis2, 2021; Penulis3 dkk., 2020)
 PAREN_GROUP_RX = re.compile(r"\(([^()]{4,180})\)")
+# Pola kutipan naratif: Arianti (2021), Mulyanti & Nurhayati (2022), Dewi et al (2023), Sugiyono (2023-65)
+NARRATIVE_CIT_RX = re.compile(
+    r"([A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+"
+    r"(?:\s+(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})"
+    r"[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)"
+)
 MANAGED_REF_RX = re.compile(r"\[@([a-zA-Z0-9_-]+)\]")
 IEEE_NUM_RX = re.compile(r"\[(\d{1,3})\]")
 
 IGNORE_PREFIXES = {
     "lihat", "misalnya", "misal", "contoh", "contohnya", "seperti", "antara",
-    "tahun", "bab", "tabel", "gambar", "halaman", "hal", "pasal", "ayat",
-    "undang-undang", "uu", "pp", "permen", "sk", "no", "nomor", "sebagaimana",
+    "tahun", "bulan", "periode", "pada", "pojk", "uu", "pp", "permen", "sk",
+    "bab", "tabel", "gambar", "halaman", "hal", "pasal", "ayat", "undang",
+    "undang-undang", "peraturan", "no", "nomor", "sebagaimana", "kelurahan",
+    "kota", "provinsi", "kabupaten", "universitas", "fakultas", "baruga",
+    "palu", "indonesia", "data", "statistik", "sumber", "menurut", "oleh",
+    "dari", "dalam", "buku", "jurnal", "penelitian", "hasil", "olah",
+    "model", "skala", "metode", "standar", "literasi", "keuangan",
+    "kinerja", "umkm", "qris", "fintech", "street", "food",
 }
 
 
@@ -125,6 +137,37 @@ def _extract_intext_citations(content: str, managed_by_id: Dict[str, Dict[str, A
                     "refId": "",
                 })
 
+    # 2b. Kutipan naratif: Penulis (Tahun) mis. Arianti (2021), Mulyanti & Nurhayati (2022), Sugiyono (2023-65)
+    for nm_cit in NARRATIVE_CIT_RX.finditer(stripped):
+        author_part = nm_cit.group(1).strip().rstrip(", ")
+        year = nm_cit.group(2).lower()
+        words_raw = [w.strip(".,") for w in author_part.split() if w.strip(".,")]
+        # Buang awalan non-nama seperti "Menurut Sugiyono" -> "Sugiyono"
+        while words_raw and words_raw[0].lower() in IGNORE_PREFIXES:
+            words_raw.pop(0)
+        if not words_raw:
+            continue
+        cleaned_author = " ".join(words_raw)
+        if any(w.lower() in IGNORE_PREFIXES for w in words_raw if w.lower() not in ("dan", "and", "et", "al", "dkk")):
+            # Jika masih menyisakan kata konteks seperti "Street Food Baruga" / "Kota Palu", cek ulang kata utama
+            filtered_words = [w for w in words_raw if w.lower() not in IGNORE_PREFIXES]
+            if not filtered_words:
+                continue
+            cleaned_author = " ".join(filtered_words)
+        surname = _extract_primary_surname(cleaned_author)
+        if not surname or len(surname) < 2 or surname.lower() in IGNORE_PREFIXES:
+            continue
+        s_norm = _norm_token(surname)
+        key = f"ay:{s_norm}:{year}"
+        if key not in seen_keys:
+            seen_keys.add(key)
+            found.append({
+                "raw": f"{cleaned_author} ({year})",
+                "surname": s_norm,
+                "year": year,
+                "refId": "",
+            })
+
     # 3. Kutipan numerik IEEE [1], [2] jika gaya IEEE dan ada angka sitasi
     if cit_style == "ieee":
         for nm in IEEE_NUM_RX.finditer(stripped):
@@ -191,9 +234,17 @@ def audit_citations(payload: Dict[str, Any]) -> Dict[str, Any]:
         else:
             s_norm = cit["surname"]
             year = cit["year"]
-            # Cocokkan berdasarkan surname + tahun (atau surname muncul di entri + tahun sama)
+            year4 = year[:4] if len(year) >= 4 else year
+            # Cocokkan berdasarkan surname + tahun 4 digit (atau n.d. bila tahun kosong)
             for b in bib_entries:
-                year_ok = (not year) or (b["year"] == year) or (year in b["plain"])
+                b_year4 = b["year"][:4] if len(b["year"]) >= 4 else b["year"]
+                year_ok = (
+                    (not year)
+                    or (not b["year"])
+                    or (b["year"] == year)
+                    or (year4 and b_year4 == year4)
+                    or (year4 and year4 in b["plain"])
+                )
                 name_ok = bool(s_norm) and (
                     b["surname"] == s_norm
                     or (len(s_norm) >= 4 and s_norm in re.sub(r"[^a-z0-9]+", "", b["plain"][:80]))

@@ -1332,7 +1332,17 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
   function auditCitationsLocally() {
     const yearRx = /\b(19\d{2}|20\d{2}[a-z]?)\b/i;
     const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-    const ignorePrefixes = new Set(['lihat', 'misalnya', 'misal', 'contoh', 'seperti', 'tahun', 'bab', 'tabel', 'gambar', 'halaman', 'hal', 'pasal', 'uu', 'pp', 'no', 'nomor']);
+    const ignorePrefixes = new Set([
+      'lihat', 'misalnya', 'misal', 'contoh', 'contohnya', 'seperti', 'antara',
+      'tahun', 'bulan', 'periode', 'pada', 'pojk', 'uu', 'pp', 'permen', 'sk',
+      'bab', 'tabel', 'gambar', 'halaman', 'hal', 'pasal', 'ayat', 'undang',
+      'undang-undang', 'peraturan', 'no', 'nomor', 'sebagaimana', 'kelurahan',
+      'kota', 'provinsi', 'kabupaten', 'universitas', 'fakultas', 'baruga',
+      'palu', 'indonesia', 'data', 'statistik', 'sumber', 'menurut', 'oleh',
+      'dari', 'dalam', 'buku', 'jurnal', 'penelitian', 'hasil', 'olah',
+      'model', 'skala', 'metode', 'standar', 'literasi', 'keuangan',
+      'kinerja', 'umkm', 'qris', 'fintech', 'street', 'food',
+    ]);
 
     const extractSurname = (chunk) => {
       const c = String(chunk || '')
@@ -1421,6 +1431,24 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       });
     }
 
+    const narrRx = /([A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+(?:\s+(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)/g;
+    while ((m = narrRx.exec(stripped)) !== null) {
+      const wordsRaw = m[1].trim().replace(/[,\s]+$/, '').split(/\s+/).map((w) => w.replace(/^[.,]+|[.,]+$/g, '')).filter(Boolean);
+      while (wordsRaw.length && ignorePrefixes.has(wordsRaw[0].toLowerCase())) wordsRaw.shift();
+      const filteredWords = wordsRaw.filter((w) => !ignorePrefixes.has(w.toLowerCase()) || ['dan', 'and', 'et', 'al', 'dkk'].includes(w.toLowerCase()));
+      if (!filteredWords.length) continue;
+      const cleanedAuth = filteredWords.join(' ');
+      const s = extractSurname(cleanedAuth);
+      if (!s || s.length < 2 || ignorePrefixes.has(s.toLowerCase())) continue;
+      const sn = norm(s);
+      const yr = m[2].toLowerCase();
+      const key = `ay:${sn}:${yr}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        inText.push({ raw: `${cleanedAuth} (${yr})`, refId: '', surname: sn, year: yr });
+      }
+    }
+
     const matched = [];
     const missingInBib = [];
     inText.forEach((cit) => {
@@ -1428,8 +1456,10 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       if (cit.refId) {
         hit = bibEntries.find((b) => b.refId === cit.refId) || null;
       } else {
+        const y4 = cit.year.slice(0, 4);
         hit = bibEntries.find((b) => {
-          const yearOk = !cit.year || b.year === cit.year || b.plain.includes(cit.year);
+          const by4 = (b.year || '').slice(0, 4);
+          const yearOk = !cit.year || !b.year || b.year === cit.year || (y4 && by4 === y4) || (y4 && b.plain.includes(y4));
           const nameOk = Boolean(cit.surname) && (b.surname === cit.surname || (cit.surname.length >= 4 && norm(b.plain.slice(0, 80)).includes(cit.surname)));
           return yearOk && nameOk;
         }) || null;
@@ -1775,7 +1805,7 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
   // =====================================================================
   // 6. MESIN PERAPIHAN TEKS 1-KLIK (AI/MD, BARIS PDF, SPASI & TANDA BACA)
   // =====================================================================
-  const REGEX_BAB_LINE = /^(?:#+\s*)?(?:BAB\s+[IVXLCDM0-9]+)\b/i;
+  const REGEX_BAB_LINE = /^(?:#+\s*)?(?:BAB\s+[IVXLCDM0-9]+)(?!\s*:)\b/i;
   const REGEX_LIST_LINE = /^(?:[-•*–—]\s+|\d+[\.\)]\s+|[a-z][\.\)]\s+)/;
 
   function isSubsubbabLine(line) {
@@ -1868,7 +1898,31 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         if (/^\[\/TABEL\]$/i.test(current)) { inTable = false; merged.push(current); continue; }
         if (inTable) { merged.push(lines[i].trim()); continue; }
 
-        if (current === '') { merged.push(''); continue; }
+        if (current === '') {
+          // Cek apakah paragraf sebelumnya terpotong di pergantian halaman PDF (tanpa tanda baca akhir) & baris non-kosong berikutnya diawali huruf kecil
+          if (merged.length > 0 && merged[merged.length - 1] !== '' && !isStructuralLine(merged[merged.length - 1])) {
+            let peek = i + 1;
+            while (peek < lines.length && lines[peek].trim() === '') peek++;
+            if (peek < lines.length) {
+              const nextLine = lines[peek].trim();
+              const prevPlain = merged[merged.length - 1].replace(/<[^>]+>/g, '').trim();
+              const nextPlain = nextLine.replace(/<[^>]+>/g, '').trim();
+              if (
+                !isStructuralLine(nextLine) &&
+                prevPlain.length >= 40 &&
+                !/[.!?:"”)\]]$/.test(prevPlain) &&
+                /^[a-z]/.test(nextPlain)
+              ) {
+                merged[merged.length - 1] = joinBrokenPair(merged[merged.length - 1], nextLine);
+                i = peek;
+                count++;
+                continue;
+              }
+            }
+          }
+          merged.push('');
+          continue;
+        }
         if (merged.length === 0 || merged[merged.length - 1] === '') { merged.push(current); continue; }
 
         const prev = merged[merged.length - 1];
@@ -1936,13 +1990,20 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         disamping: 'di samping', disini: 'di sini', disana: 'di sana', dimana: 'di mana',
       };
       const foreignTerms = [
-        'artificial intelligence', 'natural language processing', 'learning management system',
-        'large language models', 'large language model', 'machine learning', 'deep learning',
+        'structural equation modeling', 'technology acceptance model', 'total quality management',
+        'natural language processing', 'learning management system', 'non-probability sampling',
+        'continuous improvement', 'convenience sampling', 'composite reliability',
+        'artificial intelligence', 'large language models', 'large language model',
+        'financial technology', 'purposive sampling', 'financial literacy', 'adjusted r square',
+        'machine learning', 'digital payment', 'customer focus', 'deep learning',
         'cloud computing', 'internet of things', 'blended learning', 'digital library',
-        'neural network', 'computer vision', 'generative ai', 'open source', 'data mining',
-        'big data', 'e-learning', 'real-time', 'framework', 'prototype', 'benchmark',
-        'interface', 'algorithm', 'database', 'software', 'hardware', 'feedback', 'workflow',
-        'dataset', 'website', 'chatbot', 'offline', 'online', 'output', 'input', 'et al.',
+        'neural network', 'computer vision', 'cross-sectional', 'user experience',
+        'user interface', 'generative ai', 'bootstrapping', 'best practice', 'supply chain',
+        'open source', 'data mining', 'street food', 'e-commerce', 'marketplace',
+        'stakeholder', 'e-learning', 'real-time', 'cash flow', 'big data', 'framework',
+        'prototype', 'benchmark', 'interface', 'algorithm', 'database', 'software',
+        'hardware', 'feedback', 'workflow', 'e-wallet', 'cashless', 'dataset', 'website',
+        'chatbot', 'fintech', 'scoring', 'offline', 'online', 'output', 'input', 'et al.',
       ];
       const matchCase = (orig, rep) => {
         if (orig === orig.toUpperCase()) return rep.toUpperCase();
@@ -2089,8 +2150,9 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         continue;
       }
 
-      // 3. Deteksi BAB
-      const babMatch = line.match(/^(?:#\s+)?(BAB\s+[IVXLCDM0-9]+)(?:\s*[:\-–—]?\s*(.*))?$/i);
+      // 3. Deteksi BAB (lewati baris Sistematika Penulisan seperti "BAB I : PENDAHULUAN")
+      const isSistematikaBab = /^BAB\s+[IVXLCDM0-9]+\s*:/i.test(line);
+      const babMatch = !isSistematikaBab ? line.match(/^(?:#\s+)?(BAB\s+[IVXLCDM0-9]+)(?:\s*[:\-–—]?\s*(.*))?$/i) : null;
       const mdH1 = !babMatch ? line.match(/^#\s+(.+)$/) : null;
       if (babMatch || mdH1) {
         let babLabel = '';
@@ -4470,8 +4532,8 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
             prodi: '',
             university: '',
             year: String(new Date().getFullYear()),
-            logoDataUrl: '',
-            useDefaultEmblem: true,
+            logoDataUrl: payload.coverLogoDataUrl || '',
+            useDefaultEmblem: !payload.coverLogoDataUrl,
           },
           preface: {
             body: payload.prefaceBody || '',
@@ -4487,6 +4549,9 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
           },
         };
 
+        if (payload.coverLogoDataUrl) {
+          sessionImagesMemory.__coverLogo = payload.coverLogoDataUrl;
+        }
         if (payload.images && typeof payload.images === 'object') {
           Object.entries(payload.images).forEach(([k, v]) => {
             if (typeof v === 'string' && v) {

@@ -408,14 +408,15 @@
   }
 
   function detectTitleFromText(rawText, fileName) {
+    const genericHeaderRx = /^(?:MAKALAH|USULAN\s+PENELITIAN|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
     const lines = String(rawText || '')
       .replace(/\r\n/g, '\n')
       .split('\n')
       .map((l) => l.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim())
       .filter(Boolean);
 
-    for (const line of lines.slice(0, 6)) {
-      if (!/^BAB\s+[IVXLCDM0-9]+/i.test(line) && line.length >= 10 && line.length <= 160) {
+    for (const line of lines.slice(0, 8)) {
+      if (!/^BAB\s+[IVXLCDM0-9]+/i.test(line) && !genericHeaderRx.test(line) && line.length >= 10 && line.length <= 220) {
         return line.toUpperCase();
       }
     }
@@ -535,6 +536,7 @@
         tableCount: extracted.tableCount || 0,
         figureCount: extracted.figureCount || 0,
         suggestedTitle: extracted.suggestedTitle,
+        coverLogoDataUrl: extracted.coverLogoDataUrl || '',
         abstractBody: extracted.abstractBody || '',
         abstractKeywords: extracted.abstractKeywords || '',
         prefaceBody: extracted.prefaceBody || '',
@@ -711,6 +713,7 @@
         fileName: uploadedDoc.fileName,
         content: uploadedDoc.text,
         suggestedTitle: uploadedDoc.suggestedTitle,
+        coverLogoDataUrl: uploadedDoc.coverLogoDataUrl || '',
         abstractBody: uploadedDoc.abstractBody || '',
         abstractKeywords: uploadedDoc.abstractKeywords || '',
         prefaceBody: uploadedDoc.prefaceBody || '',

@@ -598,6 +598,87 @@ class TestMakaRapiHybrid(unittest.TestCase):
         self.assertEqual(lint["foreignCount"], 0)
         self.assertEqual(lint["skippedReason"], "english_document")
 
+    def test_multiline_list_br_duplicate_subbab_table_split_prose_and_dan_citations(self):
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import nsdecls, qn
+
+        doc = Document()
+        num_part = doc.part.numbering_part._element
+        abs_xml = parse_xml(
+            f'<w:abstractNum {nsdecls("w")} w:abstractNumId="88">'
+            f'<w:lvl w:ilvl="0"><w:start w:val="1"/><w:numFmt w:val="decimal"/><w:lvlText w:val="%1."/></w:lvl>'
+            f'</w:abstractNum>'
+        )
+        num_xml = parse_xml(f'<w:num {nsdecls("w")} w:numId="88"><w:abstractNumId w:val="88"/></w:num>')
+        first_num = num_part.find(qn("w:num"))
+        if first_num is not None:
+            first_num.addprevious(abs_xml)
+        else:
+            num_part.append(abs_xml)
+        num_part.append(num_xml)
+
+        def add_br_list(title: str, desc: str):
+            p = doc.add_paragraph()
+            p._p.get_or_add_pPr().append(parse_xml(f'<w:numPr {nsdecls("w")}><w:ilvl w:val="0"/><w:numId w:val="88"/></w:numPr>'))
+            p.add_run(title).bold = True
+            p.add_run().add_break()
+            p.add_run(desc)
+
+        doc.add_paragraph("PROPOSAL ARTIKEL")
+        doc.add_paragraph("PENGARUH PENGALAMAN MAGANG DAN SOFT SKILLS TERHADAP KESIAPAN KERJA")
+        doc.add_paragraph("BAB I PENDAHULUAN")
+        doc.add_paragraph("1.4.2 Manfaat Praktis")
+        add_br_list("Bagi Mahasiswa", "Memberikan pemahaman tentang pentingnya soft skills.")
+        add_br_list("Bagi Fakultas", "Menjadi bahan evaluasi program magang.")
+
+        doc.add_paragraph("BAB II KAJIAN PUSTAKA")
+        doc.add_paragraph("2.2. KAJIAN EMPIRIS")
+        doc.add_paragraph("2.2 Kajian Empiris")
+        doc.add_paragraph(
+            "Menurut Romadhoni dan Kustini (2026) serta Caballero, Walker, dan Fuller-Tyszkiewicz (2011) "
+            "studi sebelumnya mengelompokkan faktor"
+        )
+        tbl = doc.add_table(rows=2, cols=2)
+        tbl.cell(0, 0).text = "Peneliti"
+        tbl.cell(0, 1).text = "Hasil"
+        tbl.cell(1, 0).text = "Suyanto, Rahmi & Tasman (2019)"
+        tbl.cell(1, 1).text = "Signifikan"
+        doc.add_paragraph("kesiapan kerja menjadi faktor pribadi dan kompetensi soft skills.")
+
+        doc.add_paragraph("DAFTAR PUSTAKA")
+        doc.add_paragraph("Caballero, C. L., Walker, A., & Fuller-Tyszkiewicz, M. (2011). Work readiness scale. Journal of Teaching.")
+        doc.add_paragraph("Romadhoni, A., & Kustini, K. (2026). Soft skills dan kesiapan kerja. Jurnal Manajemen.")
+        doc.add_paragraph("Suyanto, Rahmi, & Tasman. (2019). Pengaruh minat kerja dan magang. Jurnal UNP.")
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        parsed = parse_docx_bytes(buf.getvalue(), "salsabilla_pattern.docx")
+
+        # 1. List dengan Shift+Enter tidak pecah jadi beberapa list 1., 1.
+        self.assertIn(
+            "1. Bagi Mahasiswa: Memberikan pemahaman tentang pentingnya soft skills.\n"
+            "2. Bagi Fakultas: Menjadi bahan evaluasi program magang.",
+            parsed["bodyText"],
+        )
+        # 2. Sub-bab duplikat "2.2. KAJIAN EMPIRIS" + "2.2 Kajian Empiris" jadi 1
+        self.assertEqual(parsed["bodyText"].lower().count("kajian empiris"), 1)
+        self.assertIn("2.2 Kajian Empiris", parsed["bodyText"])
+        # 3. Paragraf terbelah oleh tabel tersambung utuh kembali
+        self.assertIn("mengelompokkan faktor kesiapan kerja menjadi faktor pribadi", parsed["bodyText"])
+        # 4. Sitasi "dan", 3 penulis, dan penulis di Tabel Penelitian Terdahulu cocok dengan penulis pertama (tanpa pecah ke Rahmi)
+        cit = audit_citations({
+            "content": parsed["bodyText"],
+            "citations": [],
+            "manualBibliography": parsed["bibliography"],
+            "citationStyle": "apa",
+        })
+        self.assertEqual(cit["inTextCount"], 3)
+        self.assertEqual(cit["matchedCount"], 3)
+        self.assertEqual(cit["score"], 100)
+        # 5. Istilah soft skills terdeteksi oleh linter Italic Asing
+        lint = lint_academic_text(parsed["bodyText"], fix_kbbi=False, italicize_foreign=True)
+        self.assertIn("<i>soft skills</i>", lint["text"])
+
 
 if __name__ == "__main__":
     unittest.main()

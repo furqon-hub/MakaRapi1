@@ -546,6 +546,13 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
                             raw_items.append(("p", f"{marker} {sist_m.group(1).strip()}"))
                             txt = sist_m.group(2).strip()
                         else:
+                            # Normalkan Shift+Enter (<w:br/>) di dalam item daftar bernomor agar tidak memutus daftar menjadi beberapa list 1., 1., 1.
+                            if not is_bab_marker and "\n" in txt:
+                                segs = [s.strip() for s in txt.splitlines() if s.strip()]
+                                if len(segs) >= 2 and len(_strip_html_tags(segs[0])) <= 65 and not re.search(r"[.!?:;]$", _strip_html_tags(segs[0])):
+                                    txt = f"{segs[0]}: {' '.join(segs[1:])}"
+                                else:
+                                    txt = " ".join(segs)
                             txt = f"{marker} {txt}"
 
                         if is_bab_marker:
@@ -783,9 +790,33 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
             return False
         return True
 
+    def _norm_subbab_key(val: str) -> str:
+        plain = _strip_html_tags(val)
+        m = re.match(r"^(\d+(?:\.\d+)+)\.?(\s+.+)$", plain)
+        if not m:
+            return ""
+        title_norm = re.sub(r"\s+", " ", m.group(2)).strip().lower()
+        return f"{m.group(1)} {title_norm}"
+
     def _merge_broken_paragraphs(blocks: List[Tuple[str, str]]) -> List[Tuple[str, str]]:
-        merged: List[Tuple[str, str]] = []
+        # 1. Deduplikasi sub-bab ganda berturut-turut (mis. "2.2. KAJIAN EMPIRIS" lalu "2.2 Kajian Empiris")
+        deduped: List[Tuple[str, str]] = []
         for k, v in blocks:
+            if k == "p" and deduped and deduped[-1][0] == "p" and subbab_rx.match(_strip_html_tags(v)):
+                cur_key = _norm_subbab_key(v)
+                prev_key = _norm_subbab_key(deduped[-1][1])
+                if cur_key and cur_key == prev_key:
+                    # Pertahankan versi yang lebih rapi (Title Case / tanpa titik ganda setelah angka)
+                    prev_plain = _strip_html_tags(deduped[-1][1])
+                    cur_plain = _strip_html_tags(v)
+                    if prev_plain.isupper() and not cur_plain.isupper():
+                        deduped[-1] = (k, v)
+                    continue
+            deduped.append((k, v))
+
+        # 2. Gabungkan paragraf yang terbelah oleh baris kosong atau terselip blok [TABEL] di tengah kalimat
+        merged: List[Tuple[str, str]] = []
+        for k, v in deduped:
             if merged and _is_plain_prose(*merged[-1]) and _is_plain_prose(k, v):
                 prev_plain = _strip_html_tags(merged[-1][1])
                 curr_plain = _strip_html_tags(v)
@@ -798,6 +829,26 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
                         merged[-1] = ("p", merged[-1][1][:-1] + v)
                     else:
                         merged[-1] = ("p", merged[-1][1] + " " + v)
+                    continue
+            # Tangani pola: [paragraf_terpotong, [TABEL], lanjutan_kalimat_huruf_kecil]
+            if (
+                len(merged) >= 2
+                and merged[-1][0] == "tag"
+                and merged[-1][1].startswith("[TABEL")
+                and _is_plain_prose(*merged[-2])
+                and _is_plain_prose(k, v)
+            ):
+                prev_plain = _strip_html_tags(merged[-2][1])
+                curr_plain = _strip_html_tags(v)
+                if (
+                    len(prev_plain) >= 40
+                    and not re.search(r'[.!?:"”)\]]$', prev_plain)
+                    and re.match(r"^[a-z]", curr_plain)
+                ):
+                    if re.search(r"[A-Za-z]-$", merged[-2][1]) and re.match(r"^[a-z]", v):
+                        merged[-2] = ("p", merged[-2][1][:-1] + v)
+                    else:
+                        merged[-2] = ("p", merged[-2][1] + " " + v)
                     continue
             merged.append((k, v))
         return merged

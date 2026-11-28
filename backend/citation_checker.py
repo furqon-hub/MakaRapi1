@@ -14,10 +14,10 @@ from typing import Any, Dict, List, Optional, Tuple
 YEAR_RX = re.compile(r"\b(19\d{2}|20\d{2}[a-z]?)\b", re.I)
 # Pola kutipan dalam kurung: (Penulis, 2021) atau (Penulis1 & Penulis2, 2021; Penulis3 dkk., 2020)
 PAREN_GROUP_RX = re.compile(r"\(([^()]{4,180})\)")
-# Pola kutipan naratif: Arianti (2021), Mulyanti & Nurhayati (2022), Dewi et al (2023), van Gelderen et al. (2008), Sugiyono (2023-65)
+# Pola kutipan naratif: Arianti (2021), Mulyanti & Nurhayati (2022), Caballero, Walker, dan Fuller-Tyszkiewicz (2011), van Gelderen et al. (2008), Sugiyono (2023-65)
 NARRATIVE_CIT_RX = re.compile(
     r"((?:(?:van|von|de|del|di|la|le)\s+)?[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+"
-    r"(?:\s+(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})"
+    r"(?:(?:,\s+|\s+)(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,6})"
     r"[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)"
 )
 MANAGED_REF_RX = re.compile(r"\[@([a-zA-Z0-9_-]+)\]")
@@ -48,8 +48,9 @@ def _norm_token(s: str) -> str:
 
 def _extract_primary_surname(author_chunk: str) -> str:
     """Ambil kata kunci nama belakang penulis pertama (atau lembaga seperti UNESCO)."""
-    cleaned = re.sub(r"\b(?:dkk\.?|et\s+al\.?|and|dan)\b", " ", author_chunk, flags=re.I)
-    cleaned = re.split(r"[&,;]", cleaned)[0].strip()
+    # Pisahkan penulis pertama terlebih dahulu (sebelum &, koma, titik koma, "dan", atau "and")
+    first_author = re.split(r"[&,;]|\b(?:dan|and)\b", str(author_chunk or ""), flags=re.I)[0]
+    cleaned = re.sub(r"\b(?:dkk\.?|et\s+al\.?)\b", " ", first_author, flags=re.I)
     cleaned = re.sub(r"[^A-Za-zÀ-ÖØ-öø-ÿ0-9\- ]+", " ", cleaned).strip()
     words = [w for w in cleaned.split() if len(w) >= 2]
     if not words:
@@ -86,7 +87,8 @@ def _extract_bib_key(entry_text: str) -> Tuple[str, str]:
 
 def _extract_intext_citations(content: str, managed_by_id: Dict[str, Dict[str, Any]], cit_style: str) -> List[Dict[str, str]]:
     """Kumpulkan semua kutipan in-text unik dari naskah."""
-    # Hapus blok [TABEL]...[/TABEL] dan tag [GAMBAR ...] agar tidak salah baca atribut sumber
+    # Hapus tag pembuka/penutup [TABEL ...], [/TABEL], dan [GAMBAR ...] agar atribut sumber tidak bentrok,
+    # sementara sitasi di dalam sel tabel (mis. Tabel Penelitian Terdahulu) tetap diaudit konsistensinya.
     stripped = re.sub(r"\[GAMBAR[^\]]*\]", " ", str(content or ""), flags=re.I)
     stripped = re.sub(r"\[TABEL[^\]]*\]", " ", stripped, flags=re.I)
     stripped = re.sub(r"\[\/TABEL\]", " ", stripped, flags=re.I)
@@ -147,16 +149,16 @@ def _extract_intext_citations(content: str, managed_by_id: Dict[str, Dict[str, A
     for nm_cit in NARRATIVE_CIT_RX.finditer(stripped):
         author_part = nm_cit.group(1).strip().rstrip(", ")
         year = nm_cit.group(2).lower()
-        words_raw = [w.strip(".,") for w in author_part.split() if w.strip(".,")]
+        words_raw = [w.strip(".") for w in author_part.split() if w.strip(".,")]
         # Buang awalan non-nama seperti "Menurut Sugiyono" -> "Sugiyono"
-        while words_raw and words_raw[0].lower() in IGNORE_PREFIXES:
+        while words_raw and words_raw[0].rstrip(",").lower() in IGNORE_PREFIXES:
             words_raw.pop(0)
         if not words_raw:
             continue
         cleaned_author = " ".join(words_raw)
-        if any(w.lower() in IGNORE_PREFIXES for w in words_raw if w.lower() not in ("dan", "and", "et", "al", "dkk")):
+        if any(w.rstrip(",").lower() in IGNORE_PREFIXES for w in words_raw if w.rstrip(",").lower() not in ("dan", "and", "et", "al", "dkk")):
             # Jika masih menyisakan kata konteks seperti "Street Food Baruga" / "Kota Palu", cek ulang kata utama
-            filtered_words = [w for w in words_raw if w.lower() not in IGNORE_PREFIXES]
+            filtered_words = [w for w in words_raw if w.rstrip(",").lower() not in IGNORE_PREFIXES]
             if not filtered_words:
                 continue
             cleaned_author = " ".join(filtered_words)

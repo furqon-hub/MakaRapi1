@@ -1351,9 +1351,9 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
     ]);
 
     const extractSurname = (chunk) => {
-      const c = String(chunk || '')
-        .replace(/\b(?:dkk\.?|et\s+al\.?|and|dan)\b/gi, ' ')
-        .split(/[&,;]/)[0]
+      const firstAuthor = String(chunk || '').split(/[&,;]|\b(?:dan|and)\b/i)[0];
+      const c = firstAuthor
+        .replace(/\b(?:dkk\.?|et\s+al\.?)\b/gi, ' ')
         .replace(/[^A-Za-zÀ-ÖØ-öø-ÿ0-9\- ]+/g, ' ')
         .trim();
       const words = c.split(/\s+/).filter((w) => w.length >= 2);
@@ -1437,11 +1437,14 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       });
     }
 
-    const narrRx = /((?:(?:van|von|de|del|di|la|le)\s+)?[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+(?:\s+(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,5})[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)/g;
+    const narrRx = /((?:(?:van|von|de|del|di|la|le)\s+)?[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+(?:(?:,\s+|\s+)(?:(?:van|von|de|del|di|la|le)\s+)?(?:[A-ZÀ-ÖØ-Þ][A-Za-zÀ-ÖØ-öø-ÿ'\-]+|&|dan|and|et|al\.?|dkk\.?|[A-Z]\.)){0,6})[,\s]*\(\s*((?:19|20)\d{2}[a-z]?)(?:\s*[-–:,]\s*\d{1,4})?\s*\)/g;
     while ((m = narrRx.exec(stripped)) !== null) {
-      const wordsRaw = m[1].trim().replace(/[,\s]+$/, '').split(/\s+/).map((w) => w.replace(/^[.,]+|[.,]+$/g, '')).filter(Boolean);
-      while (wordsRaw.length && ignorePrefixes.has(wordsRaw[0].toLowerCase())) wordsRaw.shift();
-      const filteredWords = wordsRaw.filter((w) => !ignorePrefixes.has(w.toLowerCase()) || ['dan', 'and', 'et', 'al', 'dkk'].includes(w.toLowerCase()));
+      const wordsRaw = m[1].trim().replace(/[,\s]+$/, '').split(/\s+/).map((w) => w.replace(/^\.+|\.+$/g, '')).filter((w) => w.replace(/,/g, ''));
+      while (wordsRaw.length && ignorePrefixes.has(wordsRaw[0].replace(/,/g, '').toLowerCase())) wordsRaw.shift();
+      const filteredWords = wordsRaw.filter((w) => {
+        const low = w.replace(/,/g, '').toLowerCase();
+        return !ignorePrefixes.has(low) || ['dan', 'and', 'et', 'al', 'dkk'].includes(low);
+      });
       if (!filteredWords.length) continue;
       const cleanedAuth = filteredWords.join(' ');
       const s = extractSurname(cleanedAuth);
@@ -2008,20 +2011,25 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         disamping: 'di samping', disini: 'di sini', disana: 'di sana', dimana: 'di mana',
       };
       const foreignTerms = [
+        'social cognitive career theory', 'perceived behavioral control',
         'structural equation modeling', 'technology acceptance model', 'total quality management',
-        'natural language processing', 'learning management system', 'non-probability sampling',
-        'continuous improvement', 'convenience sampling', 'composite reliability',
-        'artificial intelligence', 'large language models', 'large language model',
-        'financial technology', 'purposive sampling', 'financial literacy', 'adjusted r square',
-        'machine learning', 'digital payment', 'customer focus', 'deep learning',
-        'cloud computing', 'internet of things', 'blended learning', 'digital library',
-        'neural network', 'computer vision', 'cross-sectional', 'user experience',
-        'user interface', 'generative ai', 'bootstrapping', 'best practice', 'supply chain',
-        'open source', 'data mining', 'street food', 'e-commerce', 'marketplace',
-        'stakeholder', 'e-learning', 'real-time', 'cash flow', 'big data', 'framework',
-        'prototype', 'benchmark', 'interface', 'algorithm', 'database', 'software',
-        'hardware', 'feedback', 'workflow', 'e-wallet', 'cashless', 'dataset', 'website',
-        'chatbot', 'fintech', 'scoring', 'offline', 'online', 'output', 'input', 'et al.',
+        'natural language processing', 'learning management system', 'entrepreneurial intention',
+        'non-probability sampling', 'continuous improvement', 'experiential learning',
+        'convenience sampling', 'composite reliability', 'artificial intelligence',
+        'large language models', 'large language model', 'financial technology',
+        'career adaptability', 'outcome expectations', 'purposive sampling',
+        'financial literacy', 'adjusted r square', 'machine learning', 'digital payment',
+        'customer focus', 'phenomenon gap', 'work readiness', 'self-efficacy', 'human capital',
+        'job readiness', 'research gap', 'deep learning', 'cloud computing',
+        'internet of things', 'blended learning', 'digital library', 'neural network',
+        'computer vision', 'cross-sectional', 'user experience', 'user interface',
+        'generative ai', 'bootstrapping', 'best practice', 'supply chain', 'open source',
+        'data mining', 'street food', 'soft skills', 'hard skills', 'soft skill', 'hard skill',
+        'internship', 'e-commerce', 'marketplace', 'stakeholder', 'e-learning', 'real-time',
+        'cash flow', 'big data', 'framework', 'prototype', 'benchmark', 'interface',
+        'algorithm', 'database', 'software', 'hardware', 'feedback', 'workflow', 'e-wallet',
+        'cashless', 'dataset', 'website', 'chatbot', 'fintech', 'scoring', 'offline',
+        'online', 'output', 'input', 'grit', 'et al.',
       ];
       const matchCase = (orig, rep) => {
         if (orig === orig.toUpperCase()) return rep.toUpperCase();

@@ -547,6 +547,8 @@
         abstractBody: extracted.abstractBody || '',
         abstractKeywords: extracted.abstractKeywords || '',
         prefaceBody: extracted.prefaceBody || '',
+        prefaceCityDate: extracted.prefaceCityDate || '',
+        prefaceSignature: extracted.prefaceSignature || '',
         bibliography: extracted.bibliography || '',
         images: extracted.images || {},
         hasEquations: Boolean(extracted.hasEquations),
@@ -707,6 +709,16 @@
       }
     });
 
+    // Sinkronkan opsi Jangan deteksi/edit Cover <-> Deteksi judul cover
+    const skipCoverEl = document.getElementById('opt-skip-cover');
+    const detectTitleEl = document.getElementById('opt-detect-title');
+    if (skipCoverEl && detectTitleEl) {
+      skipCoverEl.addEventListener('change', () => {
+        detectTitleEl.disabled = skipCoverEl.checked;
+        if (skipCoverEl.checked) detectTitleEl.checked = false;
+      });
+    }
+
     // 4. Tombol Utama Masuk Workbench dengan File Terunggah
     document.getElementById('btn-enter-with-file').addEventListener('click', () => {
       if (!uploadedDoc) {
@@ -715,16 +727,20 @@
       }
       const selectedGuidelineVal = gSelect.value || '';
       const selectedDbProfile = selectedGuidelineVal.startsWith('db:') ? dbGuidelinesById[selectedGuidelineVal.slice(3)] || null : null;
+      const skipCover = Boolean(document.getElementById('opt-skip-cover')?.checked);
       saveHandoffAndNavigate({
         mode: 'import-file',
         fileName: uploadedDoc.fileName,
         content: uploadedDoc.text,
-        suggestedTitle: uploadedDoc.suggestedTitle,
-        coverMeta: uploadedDoc.coverMeta || null,
-        coverLogoDataUrl: uploadedDoc.coverLogoDataUrl || '',
+        suggestedTitle: skipCover ? '' : uploadedDoc.suggestedTitle,
+        coverMeta: skipCover ? null : (uploadedDoc.coverMeta || null),
+        coverLogoDataUrl: skipCover ? '' : (uploadedDoc.coverLogoDataUrl || ''),
+        skipCover,
         abstractBody: uploadedDoc.abstractBody || '',
         abstractKeywords: uploadedDoc.abstractKeywords || '',
         prefaceBody: uploadedDoc.prefaceBody || '',
+        prefaceCityDate: uploadedDoc.prefaceCityDate || '',
+        prefaceSignature: uploadedDoc.prefaceSignature || '',
         bibliography: uploadedDoc.bibliography || '',
         images: uploadedDoc.images || {},
         tableCount: uploadedDoc.tableCount || 0,
@@ -734,7 +750,7 @@
           hasFootnotes: Boolean(uploadedDoc.hasFootnotes),
         },
         autoClean: document.getElementById('opt-auto-clean').checked,
-        detectTitle: document.getElementById('opt-detect-title').checked,
+        detectTitle: !skipCover && document.getElementById('opt-detect-title').checked,
         guidelineFile: uploadedGuideline,
         guidelineSample: selectedDbProfile ? '' : selectedGuidelineVal,
         guidelineDbProfile: selectedDbProfile,

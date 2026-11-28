@@ -2527,9 +2527,35 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
 
   function renderPrefaceHtml(typo) {
     const p = state.preface;
-    const paras = (p.body || '').replace(/\r\n/g, '\n').split(/\n+/).map((s) => s.trim()).filter(Boolean);
-    const bodyHtml = paras.length
-      ? paras.map((para) => `<p style="text-align:${typo.textAlign}; text-indent:${typo.firstIndentCm}cm; margin:${typo.spaceBeforePt}pt 0 ${typo.spaceAfterPt}pt 0;">${escapeHtml(para)}</p>`).join('')
+    const lines = (p.body || '').replace(/\r\n/g, '\n').split(/\n+/).map((s) => s.trim()).filter(Boolean);
+    const listRx = /^([-•*–—]|\d+[\.\)]|[a-z][\.\)])\s+(.*)$/;
+    const blocksHtml = [];
+    let i = 0;
+    while (i < lines.length) {
+      if (listRx.test(lines[i])) {
+        const itemsHtml = [];
+        while (i < lines.length && listRx.test(lines[i])) {
+          const lm = lines[i].match(listRx);
+          let mk = lm[1];
+          if (['-', '*', '–', '—'].includes(mk)) mk = '•';
+          itemsHtml.push(
+            `<div class="doc-list-item" style="text-align:${typo.textAlign};">` +
+              `<span class="doc-list-marker">${escapeHtml(mk)}</span>` +
+              `<span class="doc-list-text">${escapeAllowingItalics(lm[2].trim())}</span>` +
+            `</div>`
+          );
+          i++;
+        }
+        blocksHtml.push(`<div class="doc-list">${itemsHtml.join('')}</div>`);
+        continue;
+      }
+      blocksHtml.push(
+        `<p style="text-align:${typo.textAlign}; text-indent:${typo.firstIndentCm}cm; margin:${typo.spaceBeforePt}pt 0 ${typo.spaceAfterPt}pt 0;">${escapeAllowingItalics(lines[i])}</p>`
+      );
+      i++;
+    }
+    const bodyHtml = blocksHtml.length
+      ? blocksHtml.join('')
       : `<p style="color:#57534E; font-style:italic; text-align:center;">(Belum ada teks Kata Pengantar)</p>`;
 
     return `
@@ -4562,10 +4588,12 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
       if (payload.mode === 'import-file' && typeof payload.content === 'string') {
         const preservedFormat = { ...state.format };
         const fresh = getDefaultCleanState();
+        const skipCover = Boolean(payload.skipCover);
         state = {
           ...fresh,
           format: {
             ...preservedFormat,
+            showCover: skipCover ? false : true,
             showAbstract: Boolean(payload.abstractBody),
             showPreface: Boolean(payload.prefaceBody),
             showLot: (payload.tableCount || 0) > 0,
@@ -4575,21 +4603,23 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
             body: payload.abstractBody || '',
             keywords: payload.abstractKeywords || '',
           },
-          cover: {
-            title: payload.detectTitle && payload.suggestedTitle ? payload.suggestedTitle : 'JUDUL MAKALAH',
-            subtitle: payload.coverMeta?.subtitle || '',
-            lecturer: payload.coverMeta?.lecturer || '',
-            authors: payload.coverMeta?.authors || '',
-            prodi: payload.coverMeta?.prodi || '',
-            university: payload.coverMeta?.university || '',
-            year: payload.coverMeta?.year || String(new Date().getFullYear()),
-            logoDataUrl: payload.coverLogoDataUrl || '',
-            useDefaultEmblem: !payload.coverLogoDataUrl,
-          },
+          cover: skipCover
+            ? { ...state.cover }
+            : {
+                title: payload.detectTitle && payload.suggestedTitle ? payload.suggestedTitle : 'JUDUL MAKALAH',
+                subtitle: payload.coverMeta?.subtitle || '',
+                lecturer: payload.coverMeta?.lecturer || '',
+                authors: payload.coverMeta?.authors || '',
+                prodi: payload.coverMeta?.prodi || '',
+                university: payload.coverMeta?.university || '',
+                year: payload.coverMeta?.year || String(new Date().getFullYear()),
+                logoDataUrl: payload.coverLogoDataUrl || '',
+                useDefaultEmblem: !payload.coverLogoDataUrl,
+              },
           preface: {
             body: payload.prefaceBody || '',
-            cityDate: '',
-            signature: 'Penyusun',
+            cityDate: payload.prefaceCityDate || '',
+            signature: payload.prefaceSignature || 'Penyusun',
           },
           citations: [],
           manualBibliography: payload.bibliography || '',

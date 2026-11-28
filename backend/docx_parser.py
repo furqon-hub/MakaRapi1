@@ -796,6 +796,8 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
     abstract_body = ""
     abstract_keywords = ""
     preface_body = ""
+    preface_city_date = ""
+    preface_signature = ""
     bibliography = ""
 
     content_end_idx = len(emitted)
@@ -855,7 +857,39 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
         if abstract_paras:
             abstract_body = "\n\n".join(abstract_paras)
         if preface_paras:
-            preface_body = "\n\n".join(preface_paras)
+            # Ekstrak Kota/Tanggal & Nama Penandatangan di akhir Kata Pengantar agar tidak ganda dengan blok tanda tangan
+            city_date_rx = re.compile(
+                r"^[A-Za-zÀ-ÖØ-öø-ÿ.\s]{2,35},\s*(?:\d{1,2}\s+)?[A-Za-z]+\s+(?:19|20)\d{2}$",
+                re.I,
+            )
+            if len(preface_paras) >= 2:
+                last_plain = _strip_html_tags(preface_paras[-1]).strip()
+                prev_plain = _strip_html_tags(preface_paras[-2]).strip()
+                if city_date_rx.match(prev_plain) and 2 <= len(last_plain) <= 60 and not re.search(r"[.!?]$", last_plain):
+                    preface_city_date = prev_plain
+                    preface_signature = last_plain
+                    preface_paras = preface_paras[:-2]
+            if not preface_city_date and preface_paras:
+                last_plain = _strip_html_tags(preface_paras[-1]).strip()
+                last_segs = [s.strip() for s in last_plain.splitlines() if s.strip()]
+                if len(last_segs) == 2 and city_date_rx.match(last_segs[0]) and 2 <= len(last_segs[1]) <= 60:
+                    preface_city_date = last_segs[0]
+                    preface_signature = last_segs[1]
+                    preface_paras = preface_paras[:-1]
+                elif city_date_rx.match(last_plain):
+                    preface_city_date = last_plain
+                    preface_paras = preface_paras[:-1]
+            # Gabungkan item list berurutan di Kata Pengantar dengan single newline agar penomoran tetap 1 blok
+            pref_list_rx = re.compile(r"^(?:[-•*–—]|\d+[\.\)]|[a-z][\.\)])\s+")
+            pref_parts: List[str] = []
+            prev_pl = False
+            for pp in preface_paras:
+                cur_pl = bool(pref_list_rx.match(_strip_html_tags(pp)))
+                if pref_parts:
+                    pref_parts.append("\n" if (prev_pl and cur_pl) else "\n\n")
+                pref_parts.append(pp)
+                prev_pl = cur_pl
+            preface_body = "".join(pref_parts).strip()
         body_start_idx = first_bab_idx
     elif emitted and emitted[0][0] == "p":
         first_line = re.sub(r"\s+", " ", _strip_html_tags(emitted[0][1])).strip()
@@ -996,6 +1030,8 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
         "abstractBody": abstract_body,
         "abstractKeywords": abstract_keywords,
         "prefaceBody": preface_body,
+        "prefaceCityDate": preface_city_date,
+        "prefaceSignature": preface_signature,
         "bibliography": bibliography,
         "images": images,
         "wordCount": word_count,

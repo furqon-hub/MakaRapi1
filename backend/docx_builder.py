@@ -930,15 +930,37 @@ def build_docx_from_payload(payload: Dict[str, Any]) -> bytes:
             h.paragraph_format.page_break_before = need_break
             _set_run_font(h.add_run("KATA PENGANTAR"), font_name)
 
-            paras = [s.strip() for s in re.split(r"\n+", str(preface.get("body") or "")) if s.strip()]
-            for para in paras:
+            pref_list_rx = re.compile(r"^([-•*–—]|\d+[\.\)]|[a-z][\.\)])\s+(.*)$")
+            pref_lines = [s.strip() for s in re.split(r"\n+", str(preface.get("body") or "")) if s.strip()]
+            pi = 0
+            while pi < len(pref_lines):
+                lm = pref_list_rx.match(pref_lines[pi])
+                if lm:
+                    first_mk = lm.group(1)
+                    first_kind = list_num_mgr.detect_kind(first_mk)
+                    num_id = list_num_mgr.allocate_num_id(first_mk)
+                    while pi < len(pref_lines):
+                        lm_cur = pref_list_rx.match(pref_lines[pi])
+                        if not lm_cur or list_num_mgr.detect_kind(lm_cur.group(1)) != first_kind:
+                            break
+                        p = doc.add_paragraph()
+                        p.alignment = body_align
+                        p.paragraph_format.line_spacing = line_spacing
+                        p.paragraph_format.space_before = Pt(0)
+                        p.paragraph_format.space_after = Pt(3)
+                        list_num_mgr.attach_to_paragraph(p, num_id, ilvl=0)
+                        _add_inline_html_runs(p, lm_cur.group(2).strip(), font_name, font_size_pt)
+                        pi += 1
+                    continue
+
                 p = doc.add_paragraph()
                 p.alignment = body_align
                 p.paragraph_format.first_line_indent = Cm(first_indent_cm)
                 p.paragraph_format.line_spacing = line_spacing
                 p.paragraph_format.space_before = Pt(space_before_pt)
                 p.paragraph_format.space_after = Pt(space_after_pt)
-                _set_run_font(p.add_run(para), font_name, size_pt=font_size_pt)
+                _add_inline_html_runs(p, pref_lines[pi], font_name, font_size_pt)
+                pi += 1
 
             p_sig = doc.add_paragraph()
             p_sig.alignment = WD_ALIGN_PARAGRAPH.LEFT
@@ -990,9 +1012,10 @@ def build_docx_from_payload(payload: Dict[str, Any]) -> bytes:
                 raw_sub = block.get("html") or block.get("text") or ""
                 sb_kind, sb_prefix, sb_dot, sb_clean_html = list_num_mgr.parse_subbab_prefix(raw_sub)
                 if sb_kind:
-                    cache_key = f"{sb_kind}:{sb_prefix}:{sb_dot}"
+                    # Samakan cache_key tanpa sb_dot agar "1.1." lalu "1.2" tetap satu seri (1.1, 1.2, 1.3, 1.4) dan tidak reset ke 1.1
+                    cache_key = f"{sb_kind}:{sb_prefix}"
                     if cache_key not in chapter_subbab_num_ids:
-                        chapter_subbab_num_ids[cache_key] = list_num_mgr.allocate_subbab_num_id(sb_kind, sb_prefix, sb_dot)
+                        chapter_subbab_num_ids[cache_key] = list_num_mgr.allocate_subbab_num_id(sb_kind, sb_prefix, "")
                     list_num_mgr.attach_to_paragraph(h2, chapter_subbab_num_ids[cache_key], ilvl=0)
                     _add_inline_html_runs(h2, sb_clean_html, font_name, font_size_pt, base_bold=True)
                 else:
@@ -1003,9 +1026,9 @@ def build_docx_from_payload(payload: Dict[str, Any]) -> bytes:
                 raw_sub3 = block.get("html") or block.get("text") or ""
                 sb_kind, sb_prefix, sb_dot, sb_clean_html = list_num_mgr.parse_subbab_prefix(raw_sub3)
                 if sb_kind:
-                    cache_key = f"h3:{sb_kind}:{sb_prefix}:{sb_dot}"
+                    cache_key = f"h3:{sb_kind}:{sb_prefix}"
                     if cache_key not in chapter_subbab_num_ids:
-                        chapter_subbab_num_ids[cache_key] = list_num_mgr.allocate_subbab_num_id(sb_kind, sb_prefix, sb_dot)
+                        chapter_subbab_num_ids[cache_key] = list_num_mgr.allocate_subbab_num_id(sb_kind, sb_prefix, "")
                     list_num_mgr.attach_to_paragraph(h3, chapter_subbab_num_ids[cache_key], ilvl=0)
                     _add_inline_html_runs(h3, sb_clean_html, font_name, font_size_pt, base_bold=True)
                 else:

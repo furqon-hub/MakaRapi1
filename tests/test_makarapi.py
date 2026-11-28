@@ -746,6 +746,66 @@ class TestMakaRapiHybrid(unittest.TestCase):
         self.assertEqual(cit["score"], 100)
         self.assertEqual(cit["matchedCount"], 1)
 
+    def test_preface_auto_numbering_signature_skip_cover_and_continuous_subbab(self):
+        # 1. Uji ekspor dengan showCover=False, penomoran otomatis di Kata Pengantar, & sub-bab 1.1. lalu 1.2..1.4
+        out_bytes = build_docx_from_payload({
+            "format": {
+                "paperSize": "A4", "showCover": False, "showPreface": True,
+                "showToc": True, "showLot": False, "showLof": False,
+            },
+            "preface": {
+                "body": (
+                    "Puji syukur penulis panjatkan. Ucapan terima kasih disampaikan kepada:\n"
+                    "1. Ayu Pratami, S.M., M.M. selaku dosen pengampu.\n"
+                    "2. Diri sendiri atas konsistensi menyelesaikan tugas.\n"
+                    "Semoga karya ilmiah ini bermanfaat."
+                ),
+                "cityDate": "Serang, 29 Oktober 2026",
+                "signature": "Siti Latifah",
+            },
+            "chapters": [{"blocks": [
+                {"type": "bab", "babLabel": "BAB I", "babSubtitle": "PENDAHULUAN"},
+                {"type": "subbab", "html": "1.1. Latar Belakang"},
+                {"type": "subbab", "html": "1.2 Rumusan Masalah"},
+                {"type": "subbab", "html": "1.3 Tujuan"},
+                {"type": "subbab", "html": "1.4 Manfaat"},
+            ]}],
+        })
+        with zipfile.ZipFile(io.BytesIO(out_bytes)) as zf:
+            self.assertIsNone(zf.testzip())
+            droot = ET.fromstring(zf.read("word/document.xml"))
+            # Pastikan tidak ada judul cover MAKALAH saat showCover=False
+            full_txt = "".join(t.text or "" for t in droot.findall(".//w:t", W_NS))
+            self.assertNotIn("JUDUL MAKALAH", full_txt)
+            # Pastikan kedua item list di Kata Pengantar memakai <w:numPr> dengan numId sama
+            pref_num_ids = []
+            subbab_num_ids = []
+            for p in droot.findall(".//w:body/w:p", W_NS):
+                ptxt = "".join(t.text or "" for t in p.findall(".//w:t", W_NS)).strip()
+                nid_el = p.find("./w:pPr/w:numPr/w:numId", W_NS)
+                nid = nid_el.attrib.get(f"{{{W_NS['w']}}}val") if nid_el is not None else None
+                if "Ayu Pratami" in ptxt or "Diri sendiri" in ptxt:
+                    self.assertIsNotNone(nid)
+                    self.assertFalse(ptxt.startswith(("1.", "2.")))
+                    pref_num_ids.append(nid)
+                if ptxt in ("Latar Belakang", "Rumusan Masalah", "Tujuan", "Manfaat"):
+                    self.assertIsNotNone(nid)
+                    subbab_num_ids.append(nid)
+            self.assertEqual(len(pref_num_ids), 2)
+            self.assertEqual(pref_num_ids[0], pref_num_ids[1])
+            # Keempat sub-bab (1.1., 1.2, 1.3, 1.4) wajib berbagi 1 numId yang sama agar tidak reset ke 1.1!
+            self.assertEqual(len(subbab_num_ids), 4)
+            self.assertEqual(len(set(subbab_num_ids)), 1)
+
+        # Round-trip verifikasi penomoran otomatis Kata Pengantar & Sub-bab 1.1..1.4
+        rt = parse_docx_bytes(out_bytes, "preface_num_rt.docx")
+        self.assertIn("1. Ayu Pratami", rt["prefaceBody"])
+        self.assertIn("2. Diri sendiri", rt["prefaceBody"])
+        self.assertIn("1.1 Latar Belakang", rt["bodyText"])
+        self.assertIn("1.2 Rumusan Masalah", rt["bodyText"])
+        self.assertIn("1.3 Tujuan", rt["bodyText"])
+        self.assertIn("1.4 Manfaat", rt["bodyText"])
+
 
 if __name__ == "__main__":
     unittest.main()

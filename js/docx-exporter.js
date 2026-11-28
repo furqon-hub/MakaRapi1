@@ -715,15 +715,43 @@
     }
     if (f.showPreface) {
       const p = preface || {};
-      const paras = (p.body || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
+      const prefLines = (p.body || '').split(/\n+/).map((s) => s.trim()).filter(Boolean);
       const prefXml = [heading1Xml(['KATA PENGANTAR'], frontParts.length > 0)];
-      paras.forEach((para) => {
+      const prefListRx = /^([-•*–—]|\d+[\.\)]|[a-z][\.\)])\s+(.*)$/;
+      const detectPrefListKind = (mk) => {
+        if (/^\d+\.$/.test(mk)) return 'decimal_dot';
+        if (/^\d+\)$/.test(mk)) return 'decimal_paren';
+        if (/^[a-z]\.$/.test(mk)) return 'alpha_dot';
+        if (/^[a-z]\)$/.test(mk)) return 'alpha_paren';
+        return 'bullet';
+      };
+      let pi = 0;
+      while (pi < prefLines.length) {
+        const lm = prefLines[pi].match(prefListRx);
+        if (lm) {
+          const firstKind = detectPrefListKind(lm[1]);
+          const numId = allocateListNumId(lm[1]);
+          while (pi < prefLines.length) {
+            const lmCur = prefLines[pi].match(prefListRx);
+            if (!lmCur || detectPrefListKind(lmCur[1]) !== firstKind) break;
+            const itemHtml = resolveInlineHtml ? resolveInlineHtml(lmCur[2].trim()) : xmlEsc(lmCur[2].trim());
+            prefXml.push(
+              `<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="${numId}"/></w:numPr>` +
+              `<w:spacing w:before="0" w:after="${ptToTwips(3)}" w:line="${lineRuleVal}" w:lineRule="auto"/><w:jc w:val="${bodyJc}"/></w:pPr>` +
+              `${htmlInlineToRunsXml(itemHtml)}</w:p>`
+            );
+            pi++;
+          }
+          continue;
+        }
+        const paraHtml = resolveInlineHtml ? resolveInlineHtml(prefLines[pi]) : xmlEsc(prefLines[pi]);
         prefXml.push(
           `<w:p><w:pPr><w:spacing w:before="${spaceBeforeTwips}" w:after="${spaceAfterTwips}" w:line="${lineRuleVal}" w:lineRule="auto"/><w:ind w:firstLine="${firstIndentTwips}"/><w:jc w:val="${bodyJc}"/></w:pPr>` +
-          textRun(para) +
+          `${htmlInlineToRunsXml(paraHtml)}` +
           `</w:p>`
         );
-      });
+        pi++;
+      }
       const sigIndent = Math.round(contentWidthTwips * 0.6);
       const sigRuns =
         (p.cityDate ? `${textRun(p.cityDate)}<w:r><w:br/></w:r>` : '') +
@@ -770,9 +798,9 @@
         if (block.type === 'subbab') {
           const parsed = parseSubbabPrefix(block.text);
           if (parsed.kind) {
-            const key = `${parsed.kind}:${parsed.prefix}:${parsed.dot}`;
+            const key = `${parsed.kind}:${parsed.prefix}`;
             if (chapterSubbabNumIds[key] == null) {
-              chapterSubbabNumIds[key] = allocateSubbabNumId(parsed.kind, parsed.prefix, parsed.dot);
+              chapterSubbabNumIds[key] = allocateSubbabNumId(parsed.kind, parsed.prefix, '');
             }
             const inlineHtml = resolveInlineHtml ? resolveInlineHtml(parsed.cleanText) : xmlEsc(parsed.cleanText);
             return heading2Xml(inlineHtml, chapterSubbabNumIds[key]);
@@ -783,9 +811,9 @@
         if (block.type === 'subsubbab') {
           const parsed = parseSubbabPrefix(block.text);
           if (parsed.kind) {
-            const key = `h3:${parsed.kind}:${parsed.prefix}:${parsed.dot}`;
+            const key = `h3:${parsed.kind}:${parsed.prefix}`;
             if (chapterSubbabNumIds[key] == null) {
-              chapterSubbabNumIds[key] = allocateSubbabNumId(parsed.kind, parsed.prefix, parsed.dot);
+              chapterSubbabNumIds[key] = allocateSubbabNumId(parsed.kind, parsed.prefix, '');
             }
             const inlineHtml = resolveInlineHtml ? resolveInlineHtml(parsed.cleanText) : xmlEsc(parsed.cleanText);
             return heading3Xml(inlineHtml, chapterSubbabNumIds[key]);

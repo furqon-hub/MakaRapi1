@@ -1981,7 +1981,8 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
         if (/^\[\/TABEL\]$/i.test(t)) { inTable = false; return t; }
         if (inTable || /^\[GAMBAR\b/i.test(t)) return t;
 
-        let l = rawLine.replace(/[\t\u00A0]+/g, () => { count++; return ' '; });
+        let l = rawLine.replace(/[\u200B-\u200D\uFEFF]+/g, () => { count++; return ''; });
+        l = l.replace(/[\t\u00A0]+/g, () => { count++; return ' '; });
         const trimmed = l.trim();
         if (trimmed !== l) { count++; l = trimmed; }
         l = l.replace(/ {2,}/g, () => { count++; return ' '; });
@@ -4576,12 +4577,12 @@ generatif serta menyelenggarakan pelatihan berkala bagi dosen dan mahasiswa [@re
           },
           cover: {
             title: payload.detectTitle && payload.suggestedTitle ? payload.suggestedTitle : 'JUDUL MAKALAH',
-            subtitle: '',
-            lecturer: '',
-            authors: '',
-            prodi: '',
-            university: '',
-            year: String(new Date().getFullYear()),
+            subtitle: payload.coverMeta?.subtitle || '',
+            lecturer: payload.coverMeta?.lecturer || '',
+            authors: payload.coverMeta?.authors || '',
+            prodi: payload.coverMeta?.prodi || '',
+            university: payload.coverMeta?.university || '',
+            year: payload.coverMeta?.year || String(new Date().getFullYear()),
             logoDataUrl: payload.coverLogoDataUrl || '',
             useDefaultEmblem: !payload.coverLogoDataUrl,
           },

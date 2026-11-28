@@ -26,7 +26,7 @@ SISTEMATIKA_DESC_RX = re.compile(r"^(?:Bab|Chapter)\s+(?:ini|tersebut)\b", re.I)
 GENERIC_COVER_HEADER_RX = re.compile(
     r"^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|"
     r"PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|"
-    r"SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$",
+    r"SKRIPSI|TESIS|DISERTASI|TUGAS\s+AKHIR|ARTIKEL\s+ILMIAH|LAPORAN(?:\s+\w+){0,2}|KARYA\s+(?:TULIS\s+)?ILMIAH)$",
     re.I,
 )
 APPENDIX_RX = re.compile(
@@ -122,7 +122,8 @@ def _sanitize_attr(val: str) -> str:
 
 
 def _clean_text(val: str) -> str:
-    return re.sub(r"[ \t]+", " ", str(val or "").replace("\u00A0", " ")).strip()
+    cleaned = re.sub(r"[\u200b-\u200d\ufeff]", "", str(val or "").replace("\u00A0", " "))
+    return re.sub(r"[ \t]+", " ", cleaned).strip()
 
 
 def _extract_paragraph_text_with_italics(paragraph: Paragraph) -> str:
@@ -145,7 +146,7 @@ def _extract_paragraph_text_with_italics(paragraph: Paragraph) -> str:
     # Gabungkan run berdekatan dengan status italic sama
     segments: List[Tuple[bool, str]] = []
     for r in runs:
-        t = str(r.text or "").replace("\u00A0", " ")
+        t = re.sub(r"[\u200b-\u200d\ufeff]", "", str(r.text or "").replace("\u00A0", " "))
         if not t:
             continue
         is_it = bool(r.italic)
@@ -268,14 +269,35 @@ def _extract_table_rows(table: Table) -> List[List[str]]:
     return rows
 
 
-def _iter_body_blocks(doc: Document):
-    """Iterasi paragraf dan tabel secara berurutan sesuai posisi asli di word/document.xml."""
-    body = doc.element.body
-    for child in body.iterchildren():
+SKIP_SDT_GALLERIES = {
+    "table of contents",
+    "table of figures",
+    "table of tables",
+    "table of authorities",
+}
+
+
+def _iter_container_blocks(container, doc: Document):
+    """Iterasi paragraf, tabel, dan Content Control (<w:sdt>, mis. Bibliography bawaan Word) secara berurutan."""
+    for child in container.iterchildren():
         if child.tag == qn("w:p"):
             yield Paragraph(child, doc)
         elif child.tag == qn("w:tbl"):
             yield Table(child, doc)
+        elif child.tag == qn("w:sdt"):
+            sdt_pr = child.find(qn("w:sdtPr"))
+            gal = sdt_pr.find(f".//{qn('w:docPartGallery')}") if sdt_pr is not None else None
+            gal_val = (gal.get(qn("w:val")) or "").strip().lower() if gal is not None else ""
+            if gal_val in SKIP_SDT_GALLERIES:
+                continue
+            sdt_content = child.find(qn("w:sdtContent"))
+            if sdt_content is not None:
+                yield from _iter_container_blocks(sdt_content, doc)
+
+
+def _iter_body_blocks(doc: Document):
+    """Iterasi paragraf dan tabel secara berurutan sesuai posisi asli di word/document.xml."""
+    yield from _iter_container_blocks(doc.element.body, doc)
 
 
 def _build_numbering_lookup(doc: Document) -> Dict[Tuple[str, int], Tuple[int, str, str, bool]]:
@@ -670,7 +692,81 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
 
         emitted.append(("p", str(val)))
 
-    # 3. Pisahkan Cover Title (+ Logo), Kata Pengantar, Isi BAB, Daftar Pustaka, dan Lampiran
+    # 3. Pisahkan Cover Title (+ Logo & Identitas Cover), Kata Pengantar, Isi BAB, Daftar Pustaka, dan Lampiran
+    def _extract_cover_meta(cover_lines: List[str]) -> Dict[str, str]:
+        meta = {"subtitle": "", "lecturer": "", "authors": "", "prodi": "", "university": "", "year": ""}
+        if not cover_lines:
+            return meta
+        sub_parts: List[str] = []
+        author_lines: List[str] = []
+        prodi_lines: List[str] = []
+        univ_lines: List[str] = []
+        sec = ""
+        for raw in cover_lines:
+            line = re.sub(r"\s+", " ", raw).strip()
+            if not line:
+                continue
+            if re.match(r"^(?:19|20)\d{2}$", line):
+                meta["year"] = line
+                sec = ""
+                continue
+            if re.match(r"^(?:PROGRAM\s+STUDI|PRODI|JURUSAN|FAKULTAS|DEPARTEMEN|FACULTY|DEPARTMENT|ENGLISH\s+EDUCATION)\b", line, re.I):
+                prodi_lines.append(line)
+                sec = ""
+                continue
+            if re.match(r"^(?:UNIVERSITAS|INSTITUT|POLITEKNIK|SEKOLAH\s+TINGGI|UIN\b|IAIN\b|STMIK\b|UNIVERSITY)\b", line, re.I):
+                univ_lines.append(line)
+                sec = ""
+                continue
+            if re.match(r"^(?:KOTA\s+)?(?:PALU|MEDAN|SERANG|JAKARTA|BANDUNG|SEMARANG|SURABAYA|YOGYAKARTA|PEKALONGAN|MAKASSAR|MALANG|TANGERANG)$", line, re.I):
+                sec = ""
+                continue
+            lec_m = re.match(r"^(?:Dosen\s+Pengampu|Pembimbing)\s*[:\-–—]?\s*(.*)$", line, re.I)
+            if lec_m:
+                val = lec_m.group(1).strip()
+                if val:
+                    meta["lecturer"] = val
+                    sec = ""
+                else:
+                    sec = "lecturer"
+                continue
+            by_m = re.match(r"^(?:Disusun\s+Oleh|Oleh|By)\s*[:\-–—]?\s*(.*)$", line, re.I)
+            if by_m:
+                val = by_m.group(1).strip()
+                if val:
+                    author_lines.append(val)
+                sec = "authors"
+                continue
+            if re.match(r"^(?:Disusun\s+untuk|Diajukan\s+untuk|Makalah\s+ini\s+disusun|Submitted\s+to)\b", line, re.I):
+                sub_parts.append(line)
+                sec = "subtitle"
+                continue
+            if sec == "lecturer" and not meta["lecturer"]:
+                meta["lecturer"] = line
+                sec = ""
+                continue
+            if sec == "subtitle":
+                if len(sub_parts) < 3 and len(line) <= 100:
+                    sub_parts.append(line)
+                    continue
+                sec = ""
+            if sec == "authors":
+                is_id_line = bool(re.match(r"^(?:\(?\d{6,16}\)?|(?:NIM|NPM|NRP|STB)\.?[\s:]*[A-Z0-9\s\-]{4,20}|[A-Z]\s?\d{3}\s?\d{2}\s?\d{3,4})$", line, re.I))
+                is_class_code = bool(re.match(r"^[0-9A-Z]{6,12}$", line) and any(c.isdigit() for c in line) and any(c.isalpha() for c in line))
+                if is_id_line and author_lines and "(" not in author_lines[-1]:
+                    clean_id = line.strip("() ").strip()
+                    author_lines[-1] = f"{author_lines[-1]} ({clean_id})"
+                elif is_class_code:
+                    continue
+                elif len(author_lines) < 8:
+                    author_lines.append(line)
+                continue
+        meta["subtitle"] = " ".join(sub_parts).strip()
+        meta["authors"] = "\n".join(author_lines).strip()
+        meta["prodi"] = "\n".join(prodi_lines).strip()
+        meta["university"] = "\n".join(univ_lines).strip()
+        return meta
+
     def _next_emitted_p(idx: int) -> str:
         for j in range(idx + 1, len(emitted)):
             if emitted[j][0] == "p" and emitted[j][1].strip():
@@ -716,6 +812,7 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
         bibliography = "\n".join(_merge_broken_bib_lines(bib_candidates))
 
     body_start_idx = 0
+    cover_lines: List[str] = []
     if first_bab_idx > 0:
         mode = "cover"
         abstract_paras: List[str] = []
@@ -745,6 +842,8 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
                 and 10 <= len(plain_v) <= 240
             ):
                 suggested_title = plain_v.upper()
+            elif mode == "cover":
+                cover_lines.append(plain_v)
             elif mode == "abstract":
                 kw_m = KEYWORDS_RX.match(plain_v)
                 if kw_m:
@@ -767,6 +866,8 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
             and 10 <= len(first_line) <= 220
         ):
             suggested_title = first_line.upper()
+
+    cover_meta = _extract_cover_meta(cover_lines)
 
     if not suggested_title:
         base_name = re.sub(r"\.[^.]+$", "", file_name or "MAKALAH AKADEMIK")
@@ -890,6 +991,7 @@ def parse_docx_bytes(file_bytes: bytes, file_name: str = "dokumen.docx") -> Dict
         "bodyText": final_body,
         "rawPreviewText": raw_preview_text,
         "suggestedTitle": suggested_title,
+        "coverMeta": cover_meta,
         "coverLogoDataUrl": cover_logo_data_url,
         "abstractBody": abstract_body,
         "abstractKeywords": abstract_keywords,

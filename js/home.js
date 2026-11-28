@@ -254,7 +254,7 @@
     // 3. Pisahkan bagian Judul Awal, Kata Pengantar, Daftar Isi lama, Isi Utama (BAB), dan Daftar Pustaka
     const BAB_RX = /^(?:BAB|CHAPTH?ER)\s+[IVXLCDM0-9]+(?!\s*:)\b/i;
     const SISTEMATIKA_DESC_RX = /^(?:Bab|Chapter)\s+(?:ini|tersebut)\b/i;
-    const GENERIC_COVER_RX = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
+    const GENERIC_COVER_RX = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|TUGAS\s+AKHIR|ARTIKEL\s+ILMIAH|LAPORAN(?:\s+\w+){0,2}|KARYA\s+(?:TULIS\s+)?ILMIAH)$/i;
     const PREFACE_RX = /^(?:KATA\s+PENGANTAR|PRAKATA|PREFACE|ACKNOWLEDGEMENTS?)$/i;
     const FRONT_LIST_RX = /^(?:DAFTAR\s+ISI|DAFTAR\s+TABEL|DAFTAR\s+GAMBAR|TABLE\s+OF\s+CONTENTS?|LIST\s+OF\s+TABLES?|LIST\s+OF\s+FIGURES?)$/i;
     const BIB_RX = /^(?:DAFTAR\s+PUSTAKA|DAFTAR\s+RUJUKAN|REFERENSI|REFERENCES?|BIBLIOGRAFI|BIBLIOGRAPHY|WORKS\s+CITED)$/i;
@@ -414,7 +414,7 @@
   }
 
   function detectTitleFromText(rawText, fileName) {
-    const genericHeaderRx = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|LAPORAN(?:\s+\w+){0,2}|KARYA\s+TULIS\s+ILMIAH)$/i;
+    const genericHeaderRx = /^(?:MAKALAH|USULAN\s+PENELITIAN|(?:A\s+)?RESEARCH\s+PROPOSAL|THESIS(?:\s+PROPOSAL)?|PROPOSAL(?:\s+(?:SKRIPSI|PENELITIAN|TESIS|ARTIKEL|SEMINAR))?|SKRIPSI|TESIS|DISERTASI|TUGAS\s+AKHIR|ARTIKEL\s+ILMIAH|LAPORAN(?:\s+\w+){0,2}|KARYA\s+(?:TULIS\s+)?ILMIAH)$/i;
     const lines = String(rawText || '')
       .replace(/\r\n/g, '\n')
       .split('\n')
@@ -542,6 +542,7 @@
         tableCount: extracted.tableCount || 0,
         figureCount: extracted.figureCount || 0,
         suggestedTitle: extracted.suggestedTitle,
+        coverMeta: extracted.coverMeta || null,
         coverLogoDataUrl: extracted.coverLogoDataUrl || '',
         abstractBody: extracted.abstractBody || '',
         abstractKeywords: extracted.abstractKeywords || '',
@@ -719,6 +720,7 @@
         fileName: uploadedDoc.fileName,
         content: uploadedDoc.text,
         suggestedTitle: uploadedDoc.suggestedTitle,
+        coverMeta: uploadedDoc.coverMeta || null,
         coverLogoDataUrl: uploadedDoc.coverLogoDataUrl || '',
         abstractBody: uploadedDoc.abstractBody || '',
         abstractKeywords: uploadedDoc.abstractKeywords || '',

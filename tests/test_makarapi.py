@@ -679,6 +679,73 @@ class TestMakaRapiHybrid(unittest.TestCase):
         lint = lint_academic_text(parsed["bodyText"], fix_kbbi=False, italicize_foreign=True)
         self.assertIn("<i>soft skills</i>", lint["text"])
 
+    def test_word_sdt_bibliography_karya_ilmiah_cover_meta_and_zwsp(self):
+        from docx.oxml import parse_xml
+        from docx.oxml.ns import nsdecls
+
+        doc = Document()
+        doc.add_paragraph("KARYA ILMIAH")
+        doc.add_paragraph("PELUANG EKONOMI DARI PENGELOLAAN BANK SAMPAH DI MASYARAKAT")
+        doc.add_paragraph("Disusun untuk memenuhi tugas Mata Kuliah Bahasa Indonesia")
+        doc.add_paragraph("Dosen Pengampu :")
+        doc.add_paragraph("AYU PRATAMI, S.M., M.M.")
+        doc.add_paragraph("Disusun oleh :")
+        doc.add_paragraph("SITI LATIFAH")
+        doc.add_paragraph("(261090500164)")
+        doc.add_paragraph("PROGRAM STUDI MANAJEMEN")
+        doc.add_paragraph("FAKULTAS EKONOMI & BISNIS")
+        doc.add_paragraph("UNIVERSITAS PAMULANG")
+        doc.add_paragraph("2026")
+
+        # SDT Daftar Isi (harus dilewati agar tidak masuk body)
+        toc_sdt = parse_xml(
+            f'<w:sdt {nsdecls("w")}>'
+            f'<w:sdtPr><w:docPartObj><w:docPartGallery w:val="Table of Contents"/></w:docPartObj></w:sdtPr>'
+            f'<w:sdtContent><w:p><w:r><w:t>DAFTAR ISI</w:t></w:r></w:p><w:p><w:r><w:t>BAB I PENDAHULUAN 1</w:t></w:r></w:p></w:sdtContent>'
+            f'</w:sdt>'
+        )
+        doc.element.body.append(toc_sdt)
+
+        doc.add_paragraph("BAB I")
+        doc.add_paragraph("PENDAHULUAN")
+        doc.add_paragraph("\u200b   Kehadiran bank sampah menurut Afdhal (2024) meningkatkan ekonomi warga.")
+        doc.add_paragraph("\u200b")
+
+        # SDT Daftar Pustaka bawaan Microsoft Word (w:bibliography)
+        bib_sdt = parse_xml(
+            f'<w:sdt {nsdecls("w")}>'
+            f'<w:sdtPr><w:docPartObj><w:docPartGallery w:val="Bibliographies"/></w:docPartObj><w:bibliography/></w:sdtPr>'
+            f'<w:sdtContent>'
+            f'<w:p><w:r><w:t>DAFTAR PUSTAKA</w:t></w:r></w:p>'
+            f'<w:p><w:r><w:t>Afdhal, A. (2024). Peran Bank Sampah dalam Memperkuat Ekonomi Lokal. Jurnal Saskara.</w:t></w:r></w:p>'
+            f'</w:sdtContent>'
+            f'</w:sdt>'
+        )
+        doc.element.body.append(bib_sdt)
+
+        buf = io.BytesIO()
+        doc.save(buf)
+        parsed = parse_docx_bytes(buf.getvalue(), "karya_ilmiah_sdt.docx")
+
+        self.assertEqual(parsed["suggestedTitle"], "PELUANG EKONOMI DARI PENGELOLAAN BANK SAMPAH DI MASYARAKAT")
+        self.assertEqual(parsed["coverMeta"]["lecturer"], "AYU PRATAMI, S.M., M.M.")
+        self.assertEqual(parsed["coverMeta"]["authors"], "SITI LATIFAH (261090500164)")
+        self.assertEqual(parsed["coverMeta"]["university"], "UNIVERSITAS PAMULANG")
+        self.assertEqual(parsed["coverMeta"]["year"], "2026")
+        self.assertEqual(parsed["babCount"], 1)
+        self.assertNotIn("\u200b", parsed["bodyText"])
+        self.assertEqual(len(parsed["bibliography"].splitlines()), 1)
+        self.assertIn("Afdhal, A. (2024)", parsed["bibliography"])
+
+        cit = audit_citations({
+            "content": parsed["bodyText"],
+            "citations": [],
+            "manualBibliography": parsed["bibliography"],
+            "citationStyle": "apa",
+        })
+        self.assertEqual(cit["score"], 100)
+        self.assertEqual(cit["matchedCount"], 1)
+
 
 if __name__ == "__main__":
     unittest.main()
